@@ -1,0 +1,10 @@
+# Personal learning context — kept local by default
+/devpost/learner-profile.md
+
+# Local credentials (keep a secret-free .env.example if you add one)
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+.venv/
+__pycache__/
