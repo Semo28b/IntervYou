@@ -5,9 +5,17 @@ from gemini_service import (
     GeminiConfigurationError,
     GeminiServiceError,
     generate_opening_message,
+    generate_interview_turn,
     settings_from_secrets,
 )
-from interview import validate_job_title
+from interview import (
+    ANSWER_VALIDATION_MESSAGE,
+    InvalidInterviewTurnError,
+    InterviewMessage,
+    queue_candidate_answer,
+    record_interviewer_turn,
+    validate_job_title,
+)
 from pdf_utils import UnreadablePDFError, extract_pdf_text
 
 
@@ -103,14 +111,98 @@ def render_start_screen() -> None:
     st.session_state.cv_name = uploaded_file.name
     st.session_state.job_title = job_title.strip()
     st.session_state.opening_message = opening_message
+    st.session_state.interview_messages = [
+        {"role": "assistant", "text": opening_message}
+    ]
+    st.session_state.question_number = 1
+    st.session_state.follow_up_count = 0
+    st.session_state.pending_answer = None
+    st.session_state.interview_error = None
+    st.session_state.answer_error = None
+    st.session_state.interview_finished = False
     st.session_state.phase = "interview"
     clear_start_error()
     st.rerun()
 
 
+def process_pending_answer() -> None:
+    try:
+        settings = load_gemini_settings()
+        turn = generate_interview_turn(
+            settings,
+            st.session_state.cv_text,
+            st.session_state.job_title,
+            st.session_state.interview_messages,
+            st.session_state.question_number,
+            st.session_state.follow_up_count,
+        )
+        progress = record_interviewer_turn(
+            st.session_state.interview_messages,
+            turn,
+            st.session_state.question_number,
+            st.session_state.follow_up_count,
+        )
+    except (
+        GeminiConfigurationError,
+        GeminiServiceError,
+        InvalidInterviewTurnError,
+    ) as exc:
+        st.session_state.interview_error = str(exc)
+        return
+
+    st.session_state.question_number = progress.question_number
+    st.session_state.follow_up_count = progress.follow_up_count
+    st.session_state.interview_finished = progress.finished
+    st.session_state.pending_answer = None
+    st.session_state.interview_error = None
+
+
 def render_interview_screen() -> None:
     st.title("AI Mock Interview")
-    st.chat_message("assistant").write(st.session_state.opening_message)
+    for message in st.session_state.interview_messages:
+        with st.chat_message(message["role"]):
+            st.write(message["text"])
+
+    if st.session_state.answer_error:
+        with st.chat_message("assistant"):
+            st.error(st.session_state.answer_error)
+
+    if st.session_state.pending_answer is not None:
+        if st.session_state.interview_error:
+            with st.chat_message("assistant"):
+                st.error(st.session_state.interview_error)
+            if st.button("Try again", key="retry_interview_request"):
+                st.session_state.interview_error = None
+                st.rerun()
+        else:
+            with st.spinner("The interviewer is thinking..."):
+                process_pending_answer()
+            if st.session_state.interview_error is None:
+                st.rerun()
+
+    placeholder = (
+        "The interview has ended"
+        if st.session_state.interview_finished
+        else "Type your answer"
+    )
+    answer = st.chat_input(
+        placeholder=placeholder,
+        disabled=(
+            st.session_state.interview_finished
+            or st.session_state.pending_answer is not None
+        ),
+    )
+    if answer is None:
+        return
+
+    if not queue_candidate_answer(answer, st.session_state.interview_messages):
+        st.session_state.answer_error = ANSWER_VALIDATION_MESSAGE
+        st.rerun()
+
+    st.session_state.answer_error = None
+    st.session_state.pending_answer = answer
+    st.session_state.interview_error = None
+    st.rerun()
 
 
 def main() -> None:
@@ -119,10 +211,27 @@ def main() -> None:
         "phase": "start",
         "start_error_field": None,
         "start_error_message": None,
+        "interview_messages": None,
+        "question_number": 1,
+        "follow_up_count": 0,
+        "pending_answer": None,
+        "interview_error": None,
+        "answer_error": None,
+        "interview_finished": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
+    if st.session_state.interview_messages is None:
+        st.session_state.interview_messages = []
+    if (
+        st.session_state.phase == "interview"
+        and not st.session_state.interview_messages
+    ):
+        st.session_state.interview_messages = [
+            {"role": "assistant", "text": st.session_state.opening_message}
+        ]
 
     if st.session_state.phase == "start":
         render_start_screen()
