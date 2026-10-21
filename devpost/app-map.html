@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>AI Mock Interview — App Map</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #FAF8F1;
+      --surface: #FFFFFF;
+      --ink: #35433D;
+      --muted: #58665F;
+      --mint: #DFF2E5;
+      --line: #D8E2D9;
+      --gray: #F0F0F0;
+      --yellow: #FFF1C4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font: 1rem/1.6 system-ui, sans-serif;
+    }
+    main {
+      width: min(100% - 2rem, 58rem);
+      margin: 0 auto;
+      padding: 2.5rem 0 4rem;
+    }
+    h1, h2, h3 { line-height: 1.25; }
+    h1 { margin: 0.8rem 0; font-size: clamp(2rem, 6vw, 3.2rem); }
+    h2 { margin-top: 2rem; }
+    h3 { margin-bottom: 0.4rem; }
+    a { color: #245A42; text-underline-offset: 0.18em; }
+    a:focus-visible, summary:focus-visible {
+      outline: 3px solid #58866A;
+      outline-offset: 3px;
+    }
+    code {
+      overflow-wrap: anywhere;
+      border-radius: 0.25rem;
+      background: #F1F3EF;
+      padding: 0.08rem 0.3rem;
+      font-size: 0.93em;
+    }
+    .eyebrow {
+      display: inline-block;
+      border-radius: 999px;
+      background: var(--yellow);
+      padding: 0.25rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .lead { max-width: 48rem; color: var(--muted); font-size: 1.1rem; }
+    .panel {
+      margin-top: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      background: var(--surface);
+      padding: clamp(1rem, 3vw, 1.5rem);
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin: 1.25rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .flow li {
+      position: relative;
+      min-height: 8rem;
+      border: 1px solid var(--line);
+      border-radius: 0.8rem;
+      background: var(--mint);
+      padding: 1rem;
+    }
+    .flow li:nth-child(2) { background: var(--gray); }
+    .flow li:last-child { background: var(--surface); }
+    .flow li:not(:last-child)::after {
+      position: absolute;
+      top: 50%;
+      right: -0.9rem;
+      z-index: 1;
+      color: var(--ink);
+      content: "→";
+      font-size: 1.3rem;
+      font-weight: 700;
+      transform: translate(50%, -50%);
+    }
+    .flow strong { display: block; margin-bottom: 0.3rem; }
+    .route { padding-left: 1.4rem; }
+    .route li { padding: 0 0 0.8rem 0.3rem; }
+    .note {
+      border-left: 4px solid #A9D9BD;
+      padding-left: 1rem;
+    }
+    details { margin-top: 0.75rem; }
+    summary { cursor: pointer; font-weight: 650; }
+    footer { margin-top: 2rem; color: var(--muted); font-size: 0.9rem; }
+    @media (max-width: 42rem) {
+      main { padding-top: 1.5rem; }
+      .flow { grid-template-columns: 1fr; }
+      .flow li { min-height: auto; }
+      .flow li:not(:last-child)::after {
+        top: auto;
+        right: 50%;
+        bottom: -1.15rem;
+        transform: translate(50%, 50%) rotate(90deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="eyebrow">LOCAL STREAMLIT APP</span>
+      <h1>AI Mock Interview</h1>
+      <p class="lead">
+        Practice a five-question interview grounded in a CV and job title.
+        Python handles the interview rules; Google Gemini creates the interview
+        turns and feedback report.
+      </p>
+    </header>
+
+    <section class="panel" aria-labelledby="flow-heading">
+      <h2 id="flow-heading">One answer, from chat to next turn</h2>
+      <p>The main path connects what the candidate does to what appears on screen:</p>
+      <ol class="flow">
+        <li>
+          <strong>1. Submit an answer</strong>
+          <a href="../app.py"><code>app.py</code></a> collects it in
+          <code>render_interview_screen()</code>.
+        </li>
+        <li>
+          <strong>2. Apply interview rules</strong>
+          <a href="../interview.py"><code>interview.py</code></a> validates
+          answers and tracks questions and follow-ups.
+        </li>
+        <li>
+          <strong>3. Show the next turn</strong>
+          <a href="../gemini_service.py"><code>gemini_service.py</code></a>
+          requests the next utterance; the chat displays it.
+        </li>
+      </ol>
+      <p class="note">
+        After the fifth question, the same app sends the transcript for a
+        report. <code>report.py</code> checks its shape and renders scores,
+        feedback, and CV–job fit. Restart clears the temporary session.
+      </p>
+    </section>
+
+    <section class="panel" aria-labelledby="route-heading">
+      <h2 id="route-heading">A short code route</h2>
+      <p>This is a reference route prepared from the finished source; it is not a record of editor navigation.</p>
+      <ol class="route">
+        <li>
+          <a href="../app.py"><code>app.py</code></a> —
+          <code>render_interview_screen()</code> draws the chat and accepts
+          text; <code>process_pending_answer()</code> connects the answer to the
+          interview logic.
+        </li>
+        <li>
+          <a href="../interview.py"><code>interview.py</code></a> —
+          <code>queue_candidate_answer()</code> checks the answer, while
+          <code>record_interviewer_turn()</code> enforces the five-question
+          and follow-up limits. The matching rules are exercised in
+          <a href="../tests/test_interview.py"><code>tests/test_interview.py</code></a>.
+        </li>
+        <li>
+          <a href="../gemini_service.py"><code>gemini_service.py</code></a>
+          makes the model requests; <a href="../report.py"><code>report.py</code></a>
+          validates and renders the result. Report shape and score checks are
+          in <a href="../tests/test_report.py"><code>tests/test_report.py</code></a>.
+        </li>
+      </ol>
+    </section>
+
+    <section class="panel" aria-labelledby="change-heading">
+      <h2 id="change-heading">To change this, start here</h2>
+      <ul>
+        <li>Screen layout, avatars, chat bubbles, and button colors:
+          <a href="../app.py"><code>app.py</code></a>,
+          <code>inject_theme_styles()</code> and the screen render functions.</li>
+        <li>Answer validation and question limits:
+          <a href="../interview.py"><code>interview.py</code></a>,
+          with expectations in <a href="../tests/test_interview.py"><code>tests/test_interview.py</code></a>.</li>
+        <li>Interviewer behavior and model prompts:
+          <a href="../gemini_service.py"><code>gemini_service.py</code></a>.
+          Model IDs belong in the ignored local
+          <code>.streamlit/secrets.toml</code>; never put a real key in source.</li>
+        <li>Report fields and presentation:
+          <a href="../report.py"><code>report.py</code></a>,
+          with validation tests in <a href="../tests/test_report.py"><code>tests/test_report.py</code></a>.</li>
+      </ul>
+      <details>
+        <summary>Run and verify the app</summary>
+        <p>From the project folder in PowerShell, with the local environment and settings configured:</p>
+        <p><code>python -m streamlit run app.py</code></p>
+        <p>Run the offline tests with <code>python -m unittest discover -s tests -v</code>. Use a fake CV for a live demo.</p>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="practice-heading">
+      <h2 id="practice-heading">A practice to reuse</h2>
+      <p>
+        Turn a visible requirement into a checkable rule, test that rule without
+        depending on the live model, then try the full journey in the app.
+        Here, report tests verify five distinct question scores, score ranges,
+        and exactly three CV suggestions
+        (<a href="../tests/test_report.py"><code>tests/test_report.py</code></a>).
+        The spec describes the expected journey in
+        <a href="./spec.md"><code>spec.md</code> → “The Core Journey Through the System”</a>.
+        This makes a mismatch easier to find before a real Gemini response is
+        involved.
+      </p>
+    </section>
+
+    <footer>
+      Source snapshot: commit <code>e27c071</code>. This standalone map needs no
+      network or build step; it describes that code snapshot and can drift as
+      the project changes.
+    </footer>
+  </main>
+</body>
+</html>

@@ -29,7 +29,7 @@ Build mode: learn
   Learner check: Use a fake CV and job, try an answer with fewer than three words and one without an A–Z letter, then submit valid answers and confirm the interviewer stays in role and limits follow-ups.
   Commit: `Build five-question interview chat`
 
-- [ ] **3. Read the report and start again**
+- [x] **3. Read the report and start again**
   Becomes usable: After the interview, the user can view the on-screen report with exactly five main-question scores (each considering its follow-ups), CV–job assessment and three suggestions, then restart with the previous session cleared.
   Why now: The report depends on the complete transcript; keeping it last makes the demo payoff a true end-to-end result and verifies the independently configurable report model.
   PRD ref: `prd.md > The Core Journey` (steps 5–7), `prd.md > Screens and Layout > Report screen`, `prd.md > Features and Behavior > Report`, `prd.md > Features and Behavior > Restart`, `prd.md > States and Boundaries`
@@ -42,22 +42,23 @@ Build mode: learn
 ## Hands-on Checkpoints
 
 - [x] Early usable behavior explored — after slice 1, try the first CV-grounded question and share what feels right or needs adjustment.
-- [ ] Final kick-the-tires exploration and feedback completed — after slice 3, try the full journey and report.
+- [x] Final kick-the-tires exploration and feedback completed — learner completed the fake-CV report/restart flow and reviewed the final chat styling.
 
 ## Final Review
 
-- [ ] Final review complete — feedback resolved and learner confirms ready to ship
+- [x] Final review complete — feedback resolved; learner confirmed the final UI looks right and all tests pass.
 
 ## Code Tour and App Map
 
-- [ ] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
-- [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
-- [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
+- [x] Learning activity complete — brief evidence-based recap connected a visible interview action to its code and tests
+- [x] Optional edit and transfer reflection addressed — optional edit declined; transfer reflection answered and kept in the ignored learner profile
+- [x] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
 
-Activity and evidence: Slice 1 implemented; all 10 unit tests pass. Started the local Streamlit app and verified a fake-CV test produced the first question. A minimal Gemini request also succeeded with the selected interview model. Slice 2 passed 19 unit tests and the learner check for invalid-answer rejection, follow-ups, and end-of-interview input disabling. The learner noted that vague answers sometimes advance without a follow-up; retain this as future prompt-tuning feedback. A requested title-validation correction now allows only English letters and spaces; 19 tests pass and the learner confirmed the UI behavior. The local API key stays in the ignored secrets file.
-Route and stops: [actual paths and symbols; guided stops completed, or reference-only route]
-Edit outcome: [tried/kept/reverted/declined/not applicable; verification if changed]
-Reflection: [offered/answered/declined/already covered — personal answer belongs only in the ignored profile]
-Activity mode: [live app and editor, explicit static fallback, focused alternative, prior practice, or recap]
+Activity and evidence: Slice 1 implemented; all 10 unit tests pass. Started the local Streamlit app and verified a fake-CV test produced the first question. A minimal Gemini request also succeeded with the selected interview model. Slice 2 passed 19 unit tests and the learner check for invalid-answer rejection, follow-ups, and end-of-interview input disabling. The learner noted that vague answers sometimes advance without a follow-up; retain this as future prompt-tuning feedback. A requested title-validation correction now allows only English letters and spaces; 19 tests pass and the learner confirmed the UI behavior. Slice 3 added report generation, report retry, and restart; all 27 unit tests pass. The learner completed a fake-CV report/restart check, then confirmed the final avatar and chat colors looked right. The local API key stays in the ignored secrets file.
+Route and stops: Reference route only (not editor navigation): `app.py > render_interview_screen()` and `process_pending_answer()` → `interview.py > queue_candidate_answer()` and `record_interviewer_turn()` → `gemini_service.py > generate_interview_turn()`; report path: `gemini_service.py > generate_interview_report()` → `report.py > parse_report_response()` and `render_report()`.
+Edit outcome: No wrap-up code edit made; learner declined the optional label change; preserve the approved visual design.
+Reflection: Transfer reflection answered; personal wording is recorded only in the ignored learner profile.
+Activity mode: Brief, evidence-based recap and static source route; learner already tested the running full flow. App map opened locally and read; it is a reference guide, not a claim of interactive editor navigation.
 
 ## Revisions
+- Refined the final interview visuals from browser feedback: added a person-silhouette candidate avatar, soft gray interviewer bubbles, and a matching light-green report button. The learner confirmed the result; no behavior or stack changed.
