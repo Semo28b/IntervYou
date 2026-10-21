@@ -1,7 +1,7 @@
 import json
 import re
 from dataclasses import dataclass
-from typing import Literal, TypedDict
+from typing import Literal, MutableMapping, TypedDict
 
 
 ANSWER_VALIDATION_MESSAGE = (
@@ -120,3 +120,8 @@ def record_interviewer_turn(
 
     messages.append({"role": "assistant", "text": turn.text})
     return progress
+
+
+def clear_session_state(state: MutableMapping[str, object]) -> None:
+    for key in list(state.keys()):
+        del state[key]

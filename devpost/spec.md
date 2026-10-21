@@ -56,7 +56,7 @@ Open **http://localhost:8501** in the browser. For the demo, use a fake/test CV,
 
 ## Look and Feel
 
-Carry forward `prd.md > Look and Feel` and `scope.md > Inspiration & Identity`: calm, light, approachable, and professional; warm off-white page, white start/report surfaces, soft yellow label and upload accents, mint-green primary action, and dark green-gray text. Keep the start screen centered and uncluttered, and use a wide, readable chat column with interviewer and candidate messages on opposite sides. The interviewer remains serious, polite, and English-only. Use Streamlit's theme settings plus only small CSS adjustments if needed; no extra UI framework, blue palette, emojis, progress bar, or question counter.
+Carry forward `prd.md > Look and Feel` and `scope.md > Inspiration & Identity`: calm, light, approachable, and professional; warm off-white page, white start/report surfaces, soft yellow label and upload accents, mint-green primary action, and dark green-gray text. Keep the start screen centered and uncluttered, and use a wide, readable chat column with interviewer and candidate messages on opposite sides. Use a professional recruiter emoji for the interviewer and a person-silhouette avatar for the candidate. Give candidate bubbles a soft light-green background and interviewer bubbles a soft light-gray background; the chat send and View my report buttons use the same light green as candidate bubbles. The interviewer remains serious, polite, and English-only. Use Streamlit's theme settings plus only small CSS adjustments if needed; no extra UI framework, blue palette, decorative emojis, progress bar, or question counter.
 
 ## Components
 

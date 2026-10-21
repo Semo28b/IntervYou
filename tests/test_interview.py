@@ -16,6 +16,7 @@ from interview import (
     InterviewTurn,
     InvalidInterviewTurnError,
     allowed_interviewer_actions,
+    clear_session_state,
     queue_candidate_answer,
     record_interviewer_turn,
     validate_answer,
@@ -137,6 +138,17 @@ class InterviewProgressTests(unittest.TestCase):
             follow_up_count=0,
         )
         self.assertTrue(progress.finished)
+
+    def test_restart_clears_all_interview_session_state(self):
+        state = {
+            "cv_text": "test CV",
+            "interview_messages": [{"role": "user", "text": "answer"}],
+            "report": {"overall_score": 8},
+        }
+
+        clear_session_state(state)
+
+        self.assertEqual(state, {})
 
     def test_retry_response_does_not_duplicate_candidate_answer(self):
         messages = [{"role": "assistant", "text": "Tell me about yourself."}]

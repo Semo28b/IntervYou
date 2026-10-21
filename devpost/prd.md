@@ -54,9 +54,9 @@ Light, calm, approachable, still professional.
 - Soft pastel accents: light yellow for the label pill and the upload box; light mint green **Start interview** button with dark green text.
 - Dark green-gray text.
 - Simple rounded fields, thin light borders.
-- No blue, no emojis, no bright or heavy colors, nothing cluttered.
+- No blue, decorative emojis, bright or heavy colors, or clutter. Use a professional recruiter emoji and a person-silhouette candidate avatar.
 - UI can feel a little friendly; the interviewer voice stays serious, polite, and professional like real HR.
-- Interview and report keep the same colors, fonts, and simple layout (interview is full-page chat without a surrounding card).
+- Interview and report keep the same colors, fonts, and simple layout (interview is full-page chat without a surrounding card). Candidate chat bubbles are soft light green; interviewer bubbles are soft light gray; the send and report buttons match the candidate-bubble green.
 
 ## Features and Behavior
 
@@ -156,7 +156,7 @@ The one local flow above: start → five-question English interview with limited
 - A large public question bank — questions come from this CV and this job.
 - Feedback or scores during the interview.
 - Inventing a candidate name or adding a name field.
-- Blue generic AI-app styling, emojis, cluttered chrome, progress bars, or question counters.
+- Blue generic AI-app styling, decorative emojis, cluttered chrome, progress bars, or question counters.
 
 ## Open Questions
 
