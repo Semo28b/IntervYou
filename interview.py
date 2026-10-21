@@ -7,6 +7,9 @@ from typing import Literal, TypedDict
 ANSWER_VALIDATION_MESSAGE = (
     "Please use at least 3 words with English letters (A–Z)."
 )
+JOB_TITLE_VALIDATION_MESSAGE = (
+    "Please use English letters (A-Z) and spaces only."
+)
 MAX_MAIN_QUESTIONS = 5
 MAX_FOLLOW_UPS = 2
 
@@ -34,7 +37,10 @@ class InvalidInterviewTurnError(ValueError):
 
 
 def validate_job_title(job_title: str) -> bool:
-    return bool(job_title.strip())
+    return (
+        bool(job_title.strip())
+        and re.fullmatch(r"[A-Za-z ]+", job_title) is not None
+    )
 
 
 def validate_answer(answer: str) -> bool:

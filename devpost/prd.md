@@ -10,8 +10,8 @@ Source: `scope.md > Who It's For`, `scope.md > The Unique Kernel`, `scope.md > T
 
 ## The Core Journey
 
-1. Open the app locally. See a calm start screen: centered card, upload a PDF CV, type a job title, **Start interview** (disabled until a CV is uploaded and the job title field is not empty). Note: "Your CV and answers are sent to Google Gemini. Not saved by this app."
-2. On Start, if the job title is only spaces or the PDF text cannot be read, stay on the start screen with a plain, friendly error under the problem field. The interview does not begin. An empty job title never shows that error because Start stays disabled until the field has characters.
+1. Open the app locally. See a calm start screen: centered card, upload a PDF CV, type a job title, **Start interview** (disabled until a CV is uploaded and the job title contains at least one English letter and only English letters and spaces). Note: "Your CV and answers are sent to Google Gemini. Not saved by this app."
+2. A non-empty invalid job title shows a clear error under the field and keeps Start disabled. The job title may contain only English letters (A–Z) and spaces. An empty title stays disabled without an error. If the PDF text cannot be read, show a friendly error under the upload field. The interview does not begin in either case.
 3. If both are valid, move to a full-page chat. The interviewer greets the candidate for this job, says it will ask a few questions, then asks question 1 immediately.
 4. The candidate types and submits answers. If a submitted answer has fewer than three words or no English letter (A–Z), show a short message in the chat and do not send it to Gemini. Valid answers progress through questions that deepen: 1 is a light warm-up; 2–3 use specific CV details; 4–5 are deeper behavioral or challenging questions for this job. Vague or off-topic answers get at most two follow-ups, then the interviewer moves on. No scores or detailed feedback in the chat.
 5. After the last answer, the interviewer says a short polite goodbye (thanks them and says the interview is finished). The text box is disabled with the placeholder **The interview has ended**. A **View my report** button appears in the chat.
@@ -28,7 +28,7 @@ A single centered card, top to bottom, lots of white space, no sidebar.
 1. Small pill label **AI Mock Interview**, headline **Ready to practice your next interview?**, one short line: "Upload your CV, tell us the job you're aiming for, and we'll run a realistic interview, then show you how you did."
 2. CV upload box labeled **Upload your CV (PDF)** — PDF only. After upload: file name + "PDF uploaded" + **Replace**.
 3. Job title text box labeled **Job title you're applying for**, placeholder example **Marketing Specialist**. Rounded input, thin light border.
-4. Prominent **Start interview** button, disabled until a CV and a job title are provided.
+4. Prominent **Start interview** button, disabled until a CV is uploaded and the job title contains only English letters (A–Z) and spaces, with at least one letter.
 5. Small note under the button: **Your CV and answers are sent to Google Gemini. Not saved by this app.**
 6. Errors appear directly under the field that has the problem.
 
@@ -64,8 +64,8 @@ Source: `scope.md > The Unique Kernel`, `scope.md > The POC Boundary`.
 
 ### Start interview
 - PDF only. After a successful upload, show the file name and "PDF uploaded", with **Replace**.
-- **Start interview** stays disabled until a CV file is present and the job title field is not empty (has at least one character).
-- Job title that is only spaces: after Start is clicked, friendly error under the job title field; do not start. An empty field does not show this error because Start is disabled.
+- **Start interview** stays disabled until a CV file is present and the job title contains at least one English letter and only English letters (A–Z) and spaces.
+- A non-empty invalid job title (including one with only spaces, digits, punctuation, or non-English letters) shows **Please use English letters (A-Z) and spaces only.** under the field while Start remains disabled. An empty field does not show this error.
 - Unreadable PDF (no usable text): friendly error under the upload area; do not start.
 - CVs are not saved. No extra name field on the start screen.
 
@@ -106,8 +106,8 @@ If an AI request fails, show a short friendly error in the chat with **Try again
 ## States and Boundaries
 
 - **First open** — start screen, empty upload, empty job title, Start disabled, note: "Your CV and answers are sent to Google Gemini. Not saved by this app."
-- **Ready to start** — PDF uploaded (name shown) and job title field not empty; Start enabled.
-- **Start error** — unreadable PDF, or job title that is only spaces; error under that field; stay on start.
+- **Ready to start** — PDF uploaded (name shown) and job title contains at least one English letter and only English letters and spaces; Start enabled.
+- **Start error** — unreadable PDF or non-empty job title containing digits, punctuation, non-English letters, or only spaces; show an error under the affected field and stay on start.
 - **Interview in progress** — full-page chat; one unanswered interviewer question (or follow-up) at a time; Send rules as above.
 - **Interviewer thinking** — typing indicator; Send disabled.
 - **Interview failed request** — friendly error + Try again.

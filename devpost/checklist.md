@@ -54,7 +54,7 @@ Build mode: learn
 - [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
 - [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
 
-Activity and evidence: Slice 1 implemented; all 10 unit tests pass. Started the local Streamlit app and verified a fake-CV test produced the first question. A minimal Gemini request also succeeded with the selected interview model. Slice 2 passed 19 unit tests and the learner check for invalid-answer rejection, follow-ups, and end-of-interview input disabling. The learner noted that vague answers sometimes advance without a follow-up; retain this as future prompt-tuning feedback. The local API key stays in the ignored secrets file.
+Activity and evidence: Slice 1 implemented; all 10 unit tests pass. Started the local Streamlit app and verified a fake-CV test produced the first question. A minimal Gemini request also succeeded with the selected interview model. Slice 2 passed 19 unit tests and the learner check for invalid-answer rejection, follow-ups, and end-of-interview input disabling. The learner noted that vague answers sometimes advance without a follow-up; retain this as future prompt-tuning feedback. A requested title-validation correction now allows only English letters and spaces; 19 tests pass and the learner confirmed the UI behavior. The local API key stays in the ignored secrets file.
 Route and stops: [actual paths and symbols; guided stops completed, or reference-only route]
 Edit outcome: [tried/kept/reverted/declined/not applicable; verification if changed]
 Reflection: [offered/answered/declined/already covered — personal answer belongs only in the ignored profile]

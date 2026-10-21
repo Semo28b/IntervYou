@@ -12,6 +12,7 @@ from interview import (
     ANSWER_VALIDATION_MESSAGE,
     InvalidInterviewTurnError,
     InterviewMessage,
+    JOB_TITLE_VALIDATION_MESSAGE,
     queue_candidate_answer,
     record_interviewer_turn,
     validate_job_title,
@@ -66,11 +67,13 @@ def render_start_screen() -> None:
     )
     if st.session_state.start_error_field == "job_title":
         st.error(st.session_state.start_error_message)
+    elif job_title and not validate_job_title(job_title):
+        st.error(JOB_TITLE_VALIDATION_MESSAGE)
 
     st.caption("Your CV and answers are sent to Google Gemini. Not saved by this app.")
     start_clicked = st.button(
         "Start interview",
-        disabled=uploaded_file is None or not job_title,
+        disabled=uploaded_file is None or not validate_job_title(job_title),
     )
 
     if st.session_state.start_error_field == "setup":
@@ -80,7 +83,7 @@ def render_start_screen() -> None:
         return
 
     if not validate_job_title(job_title):
-        set_start_error("job_title", "Please enter a job title.")
+        set_start_error("job_title", JOB_TITLE_VALIDATION_MESSAGE)
         st.rerun()
 
     try:

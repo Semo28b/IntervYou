@@ -25,9 +25,20 @@ from pdf_utils import UnreadablePDFError, extract_pdf_text
 
 
 class InterviewInputTests(unittest.TestCase):
-    def test_job_title_must_contain_non_whitespace(self):
-        self.assertFalse(validate_job_title("   "))
+    def test_job_title_allows_only_english_letters_and_spaces(self):
+        for invalid_title in (
+            "   ",
+            "Site Engineer 2",
+            "C++ Developer",
+            "R&D Manager",
+            "Développeur",
+            "工程师",
+        ):
+            with self.subTest(title=invalid_title):
+                self.assertFalse(validate_job_title(invalid_title))
+
         self.assertTrue(validate_job_title("Marketing Specialist"))
+        self.assertTrue(validate_job_title("  QA Analyst  "))
 
     def test_answer_requires_three_words_and_an_english_letter(self):
         self.assertFalse(validate_answer("two words"))
