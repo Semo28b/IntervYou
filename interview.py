@@ -12,7 +12,10 @@ ARABIC_ANSWER_VALIDATION_MESSAGE = (
     "يرجى كتابة ثلاث كلمات على الأقل باستخدام حروف عربية أو إنجليزية."
 )
 JOB_TITLE_VALIDATION_MESSAGE = (
-    "Please use English letters (A-Z) and spaces only."
+    "Please enter a job title with letters only (at least 3 letters, no numbers or symbols)."
+)
+ARABIC_JOB_TITLE_VALIDATION_MESSAGE = (
+    "يرجى إدخال مسمى وظيفي يتكون من 3 أحرف على الأقل، دون أرقام أو رموز."
 )
 MAX_MAIN_QUESTIONS = 5
 MAX_FOLLOW_UPS = 2
@@ -40,10 +43,41 @@ class InvalidInterviewTurnError(ValueError):
     pass
 
 
+def normalize_job_title(job_title: str) -> str:
+    normalized = unicodedata.normalize("NFKC", job_title).strip()
+    return re.sub(r" +", " ", normalized)
+
+
 def validate_job_title(job_title: str) -> bool:
+    normalized = normalize_job_title(job_title)
+    letters = [
+        character
+        for character in normalized
+        if character != " "
+    ]
+    if (
+        len(letters) < 3
+        or len({character.casefold() for character in letters}) == 1
+    ):
+        return False
+
+    return all(
+        character == " "
+        or "A" <= character <= "Z"
+        or "a" <= character <= "z"
+        or (
+            unicodedata.category(character).startswith("L")
+            and "ARABIC" in unicodedata.name(character, "")
+        )
+        for character in normalized
+    ) and re.fullmatch(r"[^ ]+(?: [^ ]+)*", normalized) is not None
+
+
+def job_title_validation_message(language: str = "en") -> str:
     return (
-        bool(job_title.strip())
-        and re.fullmatch(r"[A-Za-z ]+", job_title) is not None
+        ARABIC_JOB_TITLE_VALIDATION_MESSAGE
+        if language == "ar"
+        else JOB_TITLE_VALIDATION_MESSAGE
     )
 
 

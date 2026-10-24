@@ -11,9 +11,10 @@ from gemini_service import (
 )
 from interview import (
     InvalidInterviewTurnError,
-    JOB_TITLE_VALIDATION_MESSAGE,
     answer_validation_message,
     clear_session_state,
+    job_title_validation_message,
+    normalize_job_title,
     queue_candidate_answer,
     record_interviewer_turn,
     validate_job_title,
@@ -25,6 +26,13 @@ from report import render_report
 def clear_start_error() -> None:
     st.session_state.start_error_field = None
     st.session_state.start_error_message = None
+
+
+def normalize_job_title_input() -> None:
+    st.session_state.job_title_input = normalize_job_title(
+        st.session_state.get("job_title_input", "")
+    )
+    clear_start_error()
 
 
 def load_gemini_settings():
@@ -169,12 +177,13 @@ def render_start_screen() -> None:
             "Job title you're applying for",
             placeholder="Marketing Specialist",
             key="job_title_input",
-            on_change=clear_start_error,
+            on_change=normalize_job_title_input,
         )
+        title_error = job_title_validation_message(language)
         if st.session_state.start_error_field == "job_title":
             st.error(st.session_state.start_error_message)
         elif job_title and not validate_job_title(job_title):
-            st.error(JOB_TITLE_VALIDATION_MESSAGE)
+            st.error(title_error)
 
         st.caption(
             "Your CV and answers are sent to Google Gemini. Not saved by this app."
@@ -192,7 +201,7 @@ def render_start_screen() -> None:
             return
 
         if not validate_job_title(job_title):
-            set_start_error("job_title", JOB_TITLE_VALIDATION_MESSAGE)
+            set_start_error("job_title", title_error)
             st.rerun()
 
         try:
@@ -229,7 +238,7 @@ def render_start_screen() -> None:
 
         st.session_state.cv_text = cv_text
         st.session_state.cv_name = uploaded_file.name
-        st.session_state.job_title = job_title.strip()
+        st.session_state.job_title = normalize_job_title(job_title)
         st.session_state.interview_language = language
         st.session_state.opening_message = opening_message
         st.session_state.interview_messages = [

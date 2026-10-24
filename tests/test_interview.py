@@ -14,11 +14,15 @@ from gemini_service import (
 from interview import (
     ANSWER_VALIDATION_MESSAGE,
     ARABIC_ANSWER_VALIDATION_MESSAGE,
+    ARABIC_JOB_TITLE_VALIDATION_MESSAGE,
+    JOB_TITLE_VALIDATION_MESSAGE,
     answer_validation_message,
     InterviewTurn,
     InvalidInterviewTurnError,
     allowed_interviewer_actions,
     clear_session_state,
+    job_title_validation_message,
+    normalize_job_title,
     queue_candidate_answer,
     record_interviewer_turn,
     validate_answer,
@@ -28,7 +32,17 @@ from pdf_utils import UnreadablePDFError, extract_pdf_text, looks_like_cv
 
 
 class InterviewInputTests(unittest.TestCase):
-    def test_job_title_allows_only_english_letters_and_spaces(self):
+    def test_job_title_accepts_english_and_arabic_letters(self):
+        for title in (
+            "Marketing Specialist",
+            "  QA   Analyst  ",
+            "مهندس برمجيات",
+            "مدير Marketing",
+        ):
+            with self.subTest(title=title):
+                self.assertTrue(validate_job_title(title))
+
+    def test_job_title_rejects_non_letters_short_titles_and_repeated_letters(self):
         for invalid_title in (
             "   ",
             "Site Engineer 2",
@@ -36,12 +50,36 @@ class InterviewInputTests(unittest.TestCase):
             "R&D Manager",
             "Développeur",
             "工程师",
+            "مهندس ٢",
+            "مهندس، برمجيات",
+            "م.برمجيات",
+            "اب",
+            "ااااا",
+            "aaaa",
+            "A A A",
         ):
             with self.subTest(title=invalid_title):
                 self.assertFalse(validate_job_title(invalid_title))
 
-        self.assertTrue(validate_job_title("Marketing Specialist"))
-        self.assertTrue(validate_job_title("  QA Analyst  "))
+    def test_job_title_normalization_trims_collapses_and_nfkc_normalizes(self):
+        self.assertEqual(
+            normalize_job_title("  Product　 Designer  "),
+            "Product Designer",
+        )
+        self.assertEqual(
+            normalize_job_title("  مهندس   برمجيات  "),
+            "مهندس برمجيات",
+        )
+
+    def test_job_title_error_uses_selected_interface_language(self):
+        self.assertEqual(
+            job_title_validation_message("en"),
+            JOB_TITLE_VALIDATION_MESSAGE,
+        )
+        self.assertEqual(
+            job_title_validation_message("ar"),
+            ARABIC_JOB_TITLE_VALIDATION_MESSAGE,
+        )
 
     def test_answer_requires_three_words_and_an_english_letter(self):
         self.assertFalse(validate_answer("two words"))
