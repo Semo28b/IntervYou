@@ -12,11 +12,14 @@ ARABIC_ANSWER_VALIDATION_MESSAGE = (
     "يرجى كتابة ثلاث كلمات على الأقل باستخدام حروف عربية أو إنجليزية."
 )
 JOB_TITLE_VALIDATION_MESSAGE = (
-    "Please enter a job title with letters only (at least 3 letters, no numbers or symbols)."
+    "Please enter a job title using letters only (at least 2 letters). "
+    "You can use - / + & . , ( ) ' but no numbers or other symbols."
 )
 ARABIC_JOB_TITLE_VALIDATION_MESSAGE = (
-    "يرجى إدخال مسمى وظيفي يتكون من 3 أحرف على الأقل، دون أرقام أو رموز."
+    "يرجى إدخال مسمى وظيفي باستخدام الحروف فقط (حرفان على الأقل). "
+    "يمكنك استخدام - / + & . , ( ) ' دون أرقام أو رموز أخرى."
 )
+_JOB_TITLE_PUNCTUATION = frozenset("-/+&.,()'")
 MAX_MAIN_QUESTIONS = 5
 MAX_FOLLOW_UPS = 2
 
@@ -45,24 +48,21 @@ class InvalidInterviewTurnError(ValueError):
 
 def normalize_job_title(job_title: str) -> str:
     normalized = unicodedata.normalize("NFKC", job_title).strip()
-    return re.sub(r" +", " ", normalized)
+    return re.sub(r"\s+", " ", normalized)
 
 
 def validate_job_title(job_title: str) -> bool:
     normalized = normalize_job_title(job_title)
-    letters = [
-        character
-        for character in normalized
-        if character != " "
-    ]
+    letters = [character for character in normalized if character.isalpha()]
     if (
-        len(letters) < 3
+        len(letters) < 2
         or len({character.casefold() for character in letters}) == 1
     ):
         return False
 
     return all(
         character == " "
+        or character in _JOB_TITLE_PUNCTUATION
         or "A" <= character <= "Z"
         or "a" <= character <= "z"
         or (

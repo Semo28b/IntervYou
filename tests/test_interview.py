@@ -32,34 +32,65 @@ from pdf_utils import UnreadablePDFError, extract_pdf_text, looks_like_cv
 
 
 class InterviewInputTests(unittest.TestCase):
-    def test_job_title_accepts_english_and_arabic_letters(self):
+    def test_job_title_accepts_requested_english_and_arabic_examples(self):
         for title in (
-            "Marketing Specialist",
-            "  QA   Analyst  ",
-            "مهندس برمجيات",
-            "مدير Marketing",
+            "HR",
+            "Front-End Developer",
+            "R&D Manager",
+            "Sales / Marketing",
+            "مدير موارد بشرية",
+            "محاسب (مالي)",
+            "C++ Developer",
+            "O'Neil, R&D + UX",
         ):
             with self.subTest(title=title):
                 self.assertTrue(validate_job_title(title))
 
-    def test_job_title_rejects_non_letters_short_titles_and_repeated_letters(self):
+    def test_job_title_rejects_requested_invalid_examples(self):
         for invalid_title in (
-            "   ",
-            "Site Engineer 2",
-            "C++ Developer",
-            "R&D Manager",
-            "Développeur",
-            "工程师",
+            "M",
+            "م",
+            "مهندس 2",
             "مهندس ٢",
-            "مهندس، برمجيات",
-            "م.برمجيات",
-            "اب",
-            "ااااا",
+            "!!!",
+            "----",
             "aaaa",
-            "A A A",
+            "ااااا",
+            "Dev@",
         ):
             with self.subTest(title=invalid_title):
                 self.assertFalse(validate_job_title(invalid_title))
+
+    def test_job_title_rejects_other_symbols_and_unsupported_letters(self):
+        for invalid_title in (
+            "A",
+            "مهندس!",
+            "مهندس@",
+            "مهندس#",
+            "مهندس$",
+            "مهندس%",
+            "مهندس*",
+            "مهندس=",
+            "مهندس_",
+            "مهندس<",
+            "مهندس>",
+            "مهندس?",
+            "مهندس~",
+            "Développeur",
+            "工程师",
+            "مهندس، برمجيات",
+            "A A A",
+            "!!!",
+            "----",
+        ):
+            with self.subTest(title=invalid_title):
+                self.assertFalse(validate_job_title(invalid_title))
+
+    def test_job_title_rejects_all_arabic_indic_digits(self):
+        for digit in "٠١٢٣٤٥٦٧٨٩":
+            title = f"مهندس{digit}برمجيات"
+            with self.subTest(title=title):
+                self.assertFalse(validate_job_title(title))
 
     def test_job_title_normalization_trims_collapses_and_nfkc_normalizes(self):
         self.assertEqual(
@@ -72,6 +103,21 @@ class InterviewInputTests(unittest.TestCase):
         )
 
     def test_job_title_error_uses_selected_interface_language(self):
+        self.assertEqual(
+            JOB_TITLE_VALIDATION_MESSAGE,
+            (
+                "Please enter a job title using letters only "
+                "(at least 2 letters). You can use - / + & . , ( ) ' "
+                "but no numbers or other symbols."
+            ),
+        )
+        self.assertEqual(
+            ARABIC_JOB_TITLE_VALIDATION_MESSAGE,
+            (
+                "يرجى إدخال مسمى وظيفي باستخدام الحروف فقط (حرفان على الأقل). "
+                "يمكنك استخدام - / + & . , ( ) ' دون أرقام أو رموز أخرى."
+            ),
+        )
         self.assertEqual(
             job_title_validation_message("en"),
             JOB_TITLE_VALIDATION_MESSAGE,

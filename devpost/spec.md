@@ -17,7 +17,7 @@ This keeps the proof of concept to one local app and one AI service. The tradeof
 
 PRD ref: `prd.md > The Core Journey`.
 
-1. **Start:** `app.py` shows the PDF uploader and job-title field and the note **Your CV and answers are sent to Google Gemini. Not saved by this app.** Start stays disabled until a file is present and the title contains at least one English letter, with only English letters (A–Z) and spaces. A non-empty invalid title shows a field-level error immediately.
+1. **Start:** `app.py` shows the PDF uploader and job-title field and the note **Your CV and answers are sent to Google Gemini. Not saved by this app.** Start stays disabled until a file is present and the NFKC-normalized title has at least two English or Arabic letters, is not made of repetitions of one letter, and otherwise contains only letters, spaces, or `- / + & . , ( ) '`. The app trims surrounding whitespace and collapses extra spaces. A non-empty invalid title shows the localized field-level error immediately.
 2. **Read and check the CV:** `pdf_utils.py` extracts readable text locally with `pypdf`. The app validates the title's allowed characters and that the CV has usable text. If either check fails, it stays on the start screen and explains the problem; no Gemini request is made.
 3. **Begin the interview:** `interview.py` stores the job title and extracted CV text in the active Streamlit session. `gemini_service.py` sends the text, title, and interviewer instructions to Gemini to get the welcome and first question. `app.py` shows the exchange in the chat.
 4. **Answer and continue:** When the candidate submits an answer, `interview.py` checks it has at least three words and one English letter (A–Z). If invalid, `app.py` shows **Please use at least 3 words with English letters (A–Z).** and does not send or add the answer to the interview. Otherwise, the answer and conversation context go to Gemini, which proposes a follow-up or the next main question. Python tracks the five main questions and enforces no more than two follow-ups per question. While waiting for Gemini, the chat shows a thinking indicator and prevents another submission.
@@ -92,7 +92,7 @@ Implements `prd.md > Report` and `prd.md > States and Boundaries`.
 
 ### Local behavior tests — `tests/test_interview.py`
 
-Uses `unittest` to cover deterministic rules such as job titles containing only English letters and spaces, post-submit rejection of answers with fewer than three words or no A–Z letter (including that rejected answers are not sent to Gemini or accepted into the transcript), the five-question sequence, and the follow-up cap. Tests must not require a live API key; Gemini calls can be mocked for retry and response-handling checks.
+Uses `unittest` to cover deterministic rules such as normalized English/Arabic job titles with at least two letters and only the permitted punctuation, rejection of digits/disallowed symbols/repeated-letter titles, post-submit rejection of answers with fewer than three words or no A–Z letter (including that rejected answers are not sent to Gemini or accepted into the transcript), the five-question sequence, and the follow-up cap. Tests must not require a live API key; Gemini calls can be mocked for retry and response-handling checks.
 
 Implements the verifiable rules in `prd.md > Start interview`, `prd.md > Sending answers`, and `prd.md > Interviewer in character`.
 
