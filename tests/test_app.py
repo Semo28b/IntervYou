@@ -6,6 +6,7 @@ from streamlit.testing.v1 import AppTest
 
 from app import localize_cv_error, localize_interview_error
 from report import parse_report_response
+from rtl import isolate_latin_runs
 
 
 def complete_report():
@@ -41,6 +42,16 @@ def complete_report():
 
 
 class ArabicInterfaceTests(unittest.TestCase):
+    def test_latin_runs_are_isolated_inside_arabic_text(self):
+        self.assertEqual(
+            isolate_latin_runs("المسمى CES - C++ مناسب"),
+            "المسمى \u2068CES - C++\u2069 مناسب",
+        )
+        self.assertEqual(
+            isolate_latin_runs("راجع R&D Manager وPDF"),
+            "راجع \u2068R&D Manager\u2069 و\u2068PDF\u2069",
+        )
+
     def test_arabic_start_reports_invalid_title_after_cv_upload(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
         app.run(timeout=20)
@@ -70,7 +81,10 @@ class ArabicInterfaceTests(unittest.TestCase):
         app.session_state["phase"] = "interview"
         app.session_state["interview_language"] = "ar"
         app.session_state["interview_messages"] = [
-            {"role": "assistant", "text": "مرحباً، أخبرني عن خبرتك."}
+            {
+                "role": "assistant",
+                "text": "مرحباً، أخبرني عن وظيفة CES - C++.",
+            }
         ]
         app.session_state["interview_finished"] = True
 
@@ -83,6 +97,9 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertTrue(any(item.label == "عرض تقريري" for item in app.button))
         self.assertFalse(any(item.label == "View my report" for item in app.button))
         self.assertEqual(app.chat_input[0].placeholder, "انتهت المقابلة")
+        self.assertTrue(
+            any("\u2068CES - C++.\u2069" in item.value for item in app.markdown)
+        )
 
     def test_report_shown_after_interview_renders_one_shot_scroll_to_top(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))

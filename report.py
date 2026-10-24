@@ -7,6 +7,8 @@ from typing import Any
 
 import streamlit as st
 
+from rtl import isolate_latin_runs
+
 
 class InvalidReportError(ValueError):
     pass
@@ -212,7 +214,7 @@ def _render_arabic_report(report: InterviewReport, job_title: str) -> None:
     question_scores = "".join(
         "<li>"
         f"<strong>السؤال {item.question_number}: {item.score:g} / 10</strong>"
-        f"<p>{escape(item.reason)}</p>"
+        f"<p>{escape(isolate_latin_runs(item.reason))}</p>"
         "</li>"
         for item in report.question_scores
     )
@@ -231,13 +233,13 @@ def _render_arabic_report(report: InterviewReport, job_title: str) -> None:
                 f"""
         <div dir="rtl" style="text-align:right;">
           <h1>تقرير المقابلة</h1>
-          <h3>{escape(candidate_name)}</h3>
-          <p>{escape(job_title)}</p>
+          <h3>{escape(isolate_latin_runs(candidate_name))}</h3>
+          <p>{escape(isolate_latin_runs(job_title))}</p>
 
           <h2>النتيجة الإجمالية</h2>
           <p><strong>النتيجة: {report.overall_score:g} / 10</strong></p>
           <p>بناءً على المقابلة، نتيجتك هي {report.overall_score:g} من 10.</p>
-          <p>{escape(report.overall_reason)}</p>
+          <p>{escape(isolate_latin_runs(report.overall_reason))}</p>
 
           <h2>نتائج الأسئلة</h2>
           <ol dir="rtl" style="text-align:right; padding-right:1.5rem; padding-left:0;">
@@ -278,7 +280,9 @@ def _render_html_list(
     if not items:
         return f"<p>{escape(empty_message)}</p>"
     tag = "ol" if ordered else "ul"
-    rows = "".join(f"<li>{escape(item)}</li>" for item in items)
+    rows = "".join(
+        f"<li>{escape(isolate_latin_runs(item))}</li>" for item in items
+    )
     return (
         f'<{tag} dir="rtl" style="text-align:right; '
         f'padding-right:1.5rem; padding-left:0;">'

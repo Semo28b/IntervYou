@@ -21,6 +21,7 @@ from interview import (
 )
 from pdf_utils import UnreadablePDFError, extract_pdf_text, looks_like_cv
 from report import render_report
+from rtl import isolate_latin_runs
 
 
 def clear_start_error() -> None:
@@ -82,6 +83,10 @@ def localize_cv_error(message: str, language: str) -> str:
     if "doesn't look like a CV" in message:
         return "هذا الملف لا يبدو سيرة ذاتية. يرجى رفع سيرتك الذاتية بصيغة PDF."
     return "تعذر قراءة النص في هذا الملف. يرجى رفع سيرة ذاتية نصية بصيغة PDF."
+
+
+def _display_text(text: str, language: str) -> str:
+    return isolate_latin_runs(text) if language == "ar" else text
 
 
 def inject_theme_styles() -> None:
@@ -179,16 +184,23 @@ def inject_theme_styles() -> None:
 
 def render_start_screen() -> None:
     with st.container(border=True, key="start_card"):
-        st.markdown(
-            '<div class="brand-pill">AI MOCK INTERVIEW</div>',
-            unsafe_allow_html=True,
-        )
         language = (
             "ar" if st.session_state.get("language_choice") == "العربية" else "en"
         )
+        brand = "AI MOCK INTERVIEW"
         if language == "ar":
-            st.title("هل أنت مستعد لمقابلتك القادمة؟")
-            st.write("ارفع سيرتك الذاتية وحدد الوظيفة لتبدأ مقابلة واقعية.")
+            brand = isolate_latin_runs(brand)
+        st.markdown(
+            f'<div class="brand-pill">{brand}</div>',
+            unsafe_allow_html=True,
+        )
+        if language == "ar":
+            st.title(isolate_latin_runs("هل أنت مستعد لمقابلتك القادمة؟"))
+            st.write(
+                isolate_latin_runs(
+                    "ارفع سيرتك الذاتية وحدد الوظيفة لتبدأ مقابلة واقعية."
+                )
+            )
         else:
             st.title("Ready to practice your next interview?")
             st.write(
@@ -205,7 +217,7 @@ def render_start_screen() -> None:
         language = "ar" if language_choice == "العربية" else "en"
 
         uploaded_file = st.file_uploader(
-            "ارفع سيرتك الذاتية (PDF)"
+            isolate_latin_runs("ارفع سيرتك الذاتية (PDF)")
             if language == "ar"
             else "Upload your CV (PDF)",
             type=["pdf"],
@@ -214,36 +226,44 @@ def render_start_screen() -> None:
         )
         if st.session_state.start_error_field == "cv":
             st.error(
-                localize_cv_error(st.session_state.start_error_message, language)
+                isolate_latin_runs(
+                    localize_cv_error(st.session_state.start_error_message, language)
+                )
             )
         if uploaded_file is not None:
             st.write(
-                f"{uploaded_file.name} — تم رفع ملف PDF"
+                isolate_latin_runs(f"{uploaded_file.name} — تم رفع ملف PDF")
                 if language == "ar"
                 else f"{uploaded_file.name} — PDF uploaded"
             )
 
         job_title = st.text_input(
-            "المسمى الوظيفي" if language == "ar" else "Job title you're applying for",
+            isolate_latin_runs("المسمى الوظيفي")
+            if language == "ar"
+            else "Job title you're applying for",
             placeholder="مهندس برمجيات" if language == "ar" else "Marketing Specialist",
             key="job_title_input",
             on_change=normalize_job_title_input,
         )
         title_error = job_title_validation_message(language)
         if st.session_state.start_error_field == "job_title":
-            st.error(st.session_state.start_error_message)
+            st.error(_display_text(st.session_state.start_error_message, language))
         elif job_title and not validate_job_title(job_title):
-            st.error(title_error)
+            st.error(_display_text(title_error, language))
         if st.session_state.start_error_field == "setup":
-            st.error(st.session_state.start_error_message)
+            st.error(_display_text(st.session_state.start_error_message, language))
 
         st.caption(
-            "ستُرسل سيرتك الذاتية وإجاباتك إلى Google Gemini. لا يحفظها التطبيق."
+            isolate_latin_runs(
+                "ستُرسل سيرتك الذاتية وإجاباتك إلى Google Gemini. لا يحفظها التطبيق."
+            )
             if language == "ar"
             else "Your CV and answers are sent to Google Gemini. Not saved by this app."
         )
         start_clicked = st.button(
-            "ابدأ المقابلة" if language == "ar" else "Start interview",
+            isolate_latin_runs("ابدأ المقابلة")
+            if language == "ar"
+            else "Start interview",
             type="primary",
             disabled=uploaded_file is None,
         )
@@ -406,19 +426,29 @@ def render_interview_screen() -> None:
             with message_column:
                 avatar = "🧑‍💼" if message["role"] == "assistant" else "👤"
                 with st.chat_message(message["role"], avatar=avatar):
-                    st.write(message["text"])
+                    st.write(
+                        isolate_latin_runs(message["text"])
+                        if language == "ar"
+                        else message["text"]
+                    )
 
         if st.session_state.answer_error:
             with st.chat_message("assistant"):
-                st.error(st.session_state.answer_error)
+                st.error(
+                    isolate_latin_runs(st.session_state.answer_error)
+                    if language == "ar"
+                    else st.session_state.answer_error
+                )
 
         if st.session_state.pending_answer is not None:
             if st.session_state.interview_error:
                 with st.chat_message("assistant"):
                     st.error(
-                        localize_interview_error(
-                            st.session_state.interview_error,
-                            language,
+                        isolate_latin_runs(
+                            localize_interview_error(
+                                st.session_state.interview_error,
+                                language,
+                            )
                         )
                     )
                 retry_label = "حاول مرة أخرى" if language == "ar" else "Try again"
@@ -512,8 +542,11 @@ def render_report_screen() -> None:
 
         if st.session_state.report_error is not None:
             st.error(
-                localize_interview_error(
-                    st.session_state.report_error,
+                _display_text(
+                    localize_interview_error(
+                        st.session_state.report_error,
+                        language,
+                    ),
                     language,
                 )
             )

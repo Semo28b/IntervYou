@@ -93,10 +93,11 @@ class ReportPresentationTests(unittest.TestCase):
         data["cv_suggestions"][0] = "<add measurable results>"
         report = parse_report_response(json.dumps(data))
 
-        render_report(report, "مهندس برمجيات", language="ar")
+        render_report(report, "CES - C++", language="ar")
 
         markup = markdown.call_args.args[0]
         self.assertIn('<div dir="rtl" style="text-align:right;">', markup)
+        self.assertIn("\u2068CES - C++\u2069", markup)
         self.assertIn("المرشح", markup)
         self.assertIn("مدى توافق السيرة الذاتية مع الوظيفة", markup)
         self.assertIn("نقاط القوة ذات الصلة", markup)
@@ -105,7 +106,7 @@ class ReportPresentationTests(unittest.TestCase):
         self.assertIn("<ul dir=\"rtl\"", markup)
         self.assertIn("<ol dir=\"rtl\"", markup)
         self.assertIn("background:#FFF1C4", markup)
-        self.assertIn("&lt;add measurable results&gt;", markup)
+        self.assertIn("&lt;\u2068add measurable results\u2069&gt;", markup)
         self.assertNotIn("<add measurable results>", markup)
 
     @patch("report.st.container", return_value=nullcontext())
