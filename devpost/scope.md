@@ -54,3 +54,8 @@ Someone opens the app locally and sees a simple start screen: upload CV (PDF), t
 - Start rejects extracted PDF text without multiple CV-like section/contact signals before making any Gemini request. This local keyword check is offline and free, but may miss unusual CV formats or accept non-CV text with similar signals.
 - The start card now has more top/bottom breathing room and a narrower centered width.
 - The five main questions now follow a fixed interview shape: role-interest warm-up, two CV-specific questions, a company/team contribution question, and a deeper behavioral question.
+
+## Arabic mode
+- English remains the default. Candidates may optionally choose Arabic for the interview; interviewer messages and report text use simple, professional Modern Standard Arabic, and the interview/report areas use right-to-left layout.
+- Arabic CVs and answers are supported. Answers still require at least three words and at least one English or Arabic letter; validation feedback uses the selected language.
+- Extracted PDF text is Unicode-normalized before use so Arabic presentation forms work with the local CV check. Scanned PDFs remain unsupported without OCR.

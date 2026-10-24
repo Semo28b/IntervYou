@@ -1,6 +1,6 @@
 # AI Mock Interview
 
-A local English-only interview practice app. It reads CV text on your computer and sends that text, the job title, and accepted interview answers to Google Gemini. Use fake CVs for testing.
+A local interview practice app with English as the default and optional Arabic interviews. It reads CV text on your computer and sends that text, the job title, and accepted interview answers to Google Gemini. Use fake CVs for testing.
 
 ## Run locally
 

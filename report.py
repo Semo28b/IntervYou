@@ -149,15 +149,23 @@ def parse_report_response(response_text: str) -> InterviewReport:
     )
 
 
-def _render_text_list(items: list[str]) -> None:
+def _render_text_list(items: list[str], empty_message: str) -> None:
     if not items:
-        st.write("None identified.")
+        st.write(empty_message)
         return
     for item in items:
         st.markdown(f"- {item}")
 
 
-def render_report(report: InterviewReport, job_title: str) -> None:
+def render_report(
+    report: InterviewReport,
+    job_title: str,
+    language: str = "en",
+) -> None:
+    if language == "ar":
+        _render_arabic_report(report, job_title)
+        return
+
     with st.container(border=True):
         st.title("Interview Report")
         st.subheader(report.candidate_name)
@@ -177,19 +185,60 @@ def render_report(report: InterviewReport, job_title: str) -> None:
             st.write(item.reason)
 
         st.subheader("Strengths")
-        _render_text_list(report.strengths)
+        _render_text_list(report.strengths, "None identified.")
 
         st.subheader("Areas to improve")
-        _render_text_list(report.areas_to_improve)
+        _render_text_list(report.areas_to_improve, "None identified.")
 
         st.subheader("CV–job fit")
         if report.cv_job_fit.clear_mismatch:
             st.warning("Your CV is a clear mismatch for this job.")
         st.markdown("**Relevant strengths**")
-        _render_text_list(report.cv_job_fit.strengths)
+        _render_text_list(report.cv_job_fit.strengths, "None identified.")
         st.markdown("**Gaps**")
-        _render_text_list(report.cv_job_fit.gaps)
+        _render_text_list(report.cv_job_fit.gaps, "None identified.")
 
         st.subheader("CV suggestions")
+        for index, suggestion in enumerate(report.cv_suggestions, start=1):
+            st.write(f"{index}. {suggestion}")
+
+
+def _render_arabic_report(report: InterviewReport, job_title: str) -> None:
+    candidate_name = (
+        "المرشح" if report.candidate_name == "Candidate" else report.candidate_name
+    )
+    with st.container(border=True):
+        st.title("تقرير المقابلة")
+        st.subheader(candidate_name)
+        st.write(job_title)
+
+        st.subheader("النتيجة الإجمالية")
+        st.metric("النتيجة", f"{report.overall_score:g} / 10")
+        st.write(
+            f"بناءً على المقابلة، نتيجتك هي "
+            f"{report.overall_score:g} من 10."
+        )
+        st.write(report.overall_reason)
+
+        st.subheader("نتائج الأسئلة")
+        for item in report.question_scores:
+            st.markdown(f"**السؤال {item.question_number}: {item.score:g} / 10**")
+            st.write(item.reason)
+
+        st.subheader("نقاط القوة")
+        _render_text_list(report.strengths, "لا توجد نقاط محددة.")
+
+        st.subheader("مجالات التحسين")
+        _render_text_list(report.areas_to_improve, "لا توجد نقاط محددة.")
+
+        st.subheader("مدى توافق السيرة الذاتية مع الوظيفة")
+        if report.cv_job_fit.clear_mismatch:
+            st.warning("السيرة الذاتية لا تتوافق بوضوح مع هذه الوظيفة.")
+        st.markdown("**نقاط القوة ذات الصلة**")
+        _render_text_list(report.cv_job_fit.strengths, "لا توجد نقاط محددة.")
+        st.markdown("**الفجوات**")
+        _render_text_list(report.cv_job_fit.gaps, "لا توجد فجوات محددة.")
+
+        st.subheader("اقتراحات لتحسين السيرة الذاتية")
         for index, suggestion in enumerate(report.cv_suggestions, start=1):
             st.write(f"{index}. {suggestion}")

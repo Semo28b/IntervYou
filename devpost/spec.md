@@ -188,3 +188,8 @@ Versions should be pinned in `requirements.txt` after checking compatible curren
 - `pdf_utils.py` uses an offline lexical heuristic after text extraction: two or more distinct CV section/contact signal groups are required. It avoids an additional Gemini request, cost, latency, and dependency on API availability; the tradeoff is possible false positives/negatives for unusual CV formats or documents containing similar terms.
 - `app.py` gives the start card responsive top/bottom spacing and a narrower centered width while leaving page height natural so smaller windows can scroll instead of clipping.
 - `gemini_service.py` now specifies the five-question sequence: role-interest warm-up, two distinct CV-specific details, contribution to the company/team, and a deeper behavioral question.
+
+## Arabic mode
+- English remains the default. The start-screen language choice is stored in session state and passed to Gemini prompts for opening, interview turns, and report generation. Arabic generation requests simple, professional Modern Standard Arabic while retaining the fixed JSON schema.
+- `pdf_utils.py` applies Unicode NFKC normalization to extracted text and maps Persian yeh/kaf variants to Arabic equivalents before keyword checks and use. Arabic CV headings are included in the local CV heuristic. This handles presentation-form text mappings observed in a local PDF probe; scanned/image-only PDFs still need OCR, which is out of scope.
+- Arabic answer validation keeps the three-word minimum and accepts English or Arabic-script letters. RTL is scoped to keyed interview and report containers so English/default styling and colors remain unchanged.

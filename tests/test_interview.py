@@ -13,6 +13,8 @@ from gemini_service import (
 )
 from interview import (
     ANSWER_VALIDATION_MESSAGE,
+    ARABIC_ANSWER_VALIDATION_MESSAGE,
+    answer_validation_message,
     InterviewTurn,
     InvalidInterviewTurnError,
     allowed_interviewer_actions,
@@ -47,6 +49,23 @@ class InterviewInputTests(unittest.TestCase):
         self.assertFalse(validate_answer("هذه ثلاث كلمات"))
         self.assertTrue(validate_answer("I led a project"))
 
+    def test_arabic_answer_requires_three_words_and_accepts_arabic_letters(self):
+        self.assertTrue(validate_answer("قدت مشروعاً ناجحاً", "ar"))
+        self.assertTrue(validate_answer("I led a project", "ar"))
+        self.assertFalse(validate_answer("قدت مشروعاً", "ar"))
+        self.assertFalse(validate_answer("123 !? 456", "ar"))
+        self.assertFalse(validate_answer("قدت مشروعاً ناجحاً", "en"))
+
+    def test_answer_validation_message_matches_selected_language(self):
+        self.assertEqual(
+            answer_validation_message("ar"),
+            ARABIC_ANSWER_VALIDATION_MESSAGE,
+        )
+        self.assertEqual(
+            answer_validation_message("en"),
+            ANSWER_VALIDATION_MESSAGE,
+        )
+
     def test_invalid_answer_message_is_short_and_specific(self):
         self.assertIn("3 words", ANSWER_VALIDATION_MESSAGE)
         self.assertIn("A–Z", ANSWER_VALIDATION_MESSAGE)
@@ -69,6 +88,17 @@ class InterviewInputTests(unittest.TestCase):
             messages[-1],
             {"role": "user", "text": "I led a useful project"},
         )
+
+    def test_arabic_answer_is_queued_and_short_answer_is_rejected(self):
+        messages = [{"role": "assistant", "text": "أخبرني عن خبرتك."}]
+
+        self.assertTrue(queue_candidate_answer("قدت مشروعاً ناجحاً", messages, "ar"))
+        self.assertFalse(queue_candidate_answer("قدت مشروعاً", messages, "ar"))
+        self.assertEqual(
+            messages[-1],
+            {"role": "user", "text": "قدت مشروعاً ناجحاً"},
+        )
+        self.assertEqual(len(messages), 2)
 
 
 class InterviewProgressTests(unittest.TestCase):
@@ -291,6 +321,28 @@ class GeminiSetupTests(unittest.TestCase):
         self.assertIn("why they are interested in this role", request["contents"])
 
     @patch("gemini_service.genai.Client")
+    def test_arabic_opening_requests_modern_standard_arabic(self, client_class):
+        client = client_class.return_value
+        client.models.generate_content.return_value.text = (
+            "مرحباً، ما الذي يجذبك إلى هذه الوظيفة؟"
+        )
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        message = generate_opening_message(
+            settings,
+            "خبرة في تطوير التطبيقات",
+            "Software Engineer",
+            language="ar",
+        )
+
+        self.assertIn("مرحباً", message)
+        request = client.models.generate_content.call_args.kwargs
+        self.assertIn(
+            "simple, professional Modern Standard Arabic",
+            request["config"].system_instruction,
+        )
+
+    @patch("gemini_service.genai.Client")
     def test_interview_prompt_specifies_all_five_question_roles(self, client_class):
         client = client_class.return_value
         client.models.generate_content.return_value.text = (
@@ -311,6 +363,32 @@ class GeminiSetupTests(unittest.TestCase):
         self.assertIn("question 2 and question 3 each ask", prompt)
         self.assertIn("question 4 asks what the candidate would contribute", prompt)
         self.assertIn("question 5 is a deeper behavioral question", prompt)
+
+    @patch("gemini_service.genai.Client")
+    def test_arabic_interview_turn_keeps_arabic_language_instruction(
+        self, client_class
+    ):
+        client = client_class.return_value
+        client.models.generate_content.return_value.text = (
+            '{"action": "question", "text": "ما الذي جذبك إلى هذه الوظيفة؟"}'
+        )
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        generate_interview_turn(
+            settings,
+            "خبرة في التسويق",
+            "Marketing Specialist",
+            [{"role": "user", "text": "قدت حملة ناجحة"}],
+            question_number=1,
+            follow_up_count=2,
+            language="ar",
+        )
+
+        config = client.models.generate_content.call_args.kwargs["config"]
+        self.assertIn(
+            "simple, professional Modern Standard Arabic",
+            config.system_instruction,
+        )
 
     @patch("gemini_service.genai.Client")
     def test_reports_temporary_gemini_unavailability(self, client_class):

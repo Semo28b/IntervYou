@@ -10,9 +10,9 @@ from gemini_service import (
     settings_from_secrets,
 )
 from interview import (
-    ANSWER_VALIDATION_MESSAGE,
     InvalidInterviewTurnError,
     JOB_TITLE_VALIDATION_MESSAGE,
+    answer_validation_message,
     clear_session_state,
     queue_candidate_answer,
     record_interviewer_turn,
@@ -112,6 +112,19 @@ def inject_theme_styles() -> None:
             background: #DFF2E5;
             color: #35433D;
         }
+        .st-key-arabic_interview,
+        .st-key-arabic_report {
+            direction: rtl;
+            text-align: right;
+        }
+        .st-key-arabic_interview [data-testid="stChatMessageContent"],
+        .st-key-arabic_interview [data-testid="stChatInput"] textarea {
+            direction: rtl;
+            text-align: right;
+        }
+        .st-key-arabic_report [data-testid="stMetricValue"] {
+            direction: rtl;
+        }
         [data-testid="stChatMessage"] {
             border-radius: 16px;
         }
@@ -132,6 +145,14 @@ def render_start_screen() -> None:
             "Upload your CV, tell us the job you're aiming for, and we'll run "
             "a realistic interview, then show you how you did."
         )
+
+        language_choice = st.selectbox(
+            "Interview language",
+            ("English", "العربية"),
+            key="language_choice",
+            on_change=clear_start_error,
+        )
+        language = "ar" if language_choice == "العربية" else "en"
 
         uploaded_file = st.file_uploader(
             "Upload your CV (PDF)",
@@ -197,6 +218,7 @@ def render_start_screen() -> None:
                     settings,
                     cv_text,
                     job_title.strip(),
+                    language=language,
                 )
         except GeminiConfigurationError as exc:
             set_start_error("setup", str(exc))
@@ -208,6 +230,7 @@ def render_start_screen() -> None:
         st.session_state.cv_text = cv_text
         st.session_state.cv_name = uploaded_file.name
         st.session_state.job_title = job_title.strip()
+        st.session_state.interview_language = language
         st.session_state.opening_message = opening_message
         st.session_state.interview_messages = [
             {"role": "assistant", "text": opening_message}
@@ -233,6 +256,7 @@ def process_pending_answer() -> None:
             st.session_state.interview_messages,
             st.session_state.question_number,
             st.session_state.follow_up_count,
+            language=st.session_state.get("interview_language", "en"),
         )
         progress = record_interviewer_turn(
             st.session_state.interview_messages,
@@ -260,98 +284,117 @@ def restart_interview() -> None:
 
 
 def render_interview_screen() -> None:
-    st.title("AI Mock Interview")
-    for message in st.session_state.interview_messages:
-        left, right = st.columns(2)
-        message_column = left if message["role"] == "assistant" else right
-        with message_column:
-            avatar = "🧑‍💼" if message["role"] == "assistant" else "👤"
-            with st.chat_message(message["role"], avatar=avatar):
-                st.write(message["text"])
+    language = st.session_state.get("interview_language", "en")
+    container_key = "arabic_interview" if language == "ar" else "interview_screen"
+    with st.container(key=container_key):
+        st.title("مقابلة عمل تجريبية" if language == "ar" else "AI Mock Interview")
+        for message in st.session_state.interview_messages:
+            left, right = st.columns(2)
+            if language == "ar":
+                message_column = (
+                    right if message["role"] == "assistant" else left
+                )
+            else:
+                message_column = (
+                    left if message["role"] == "assistant" else right
+                )
+            with message_column:
+                avatar = "🧑‍💼" if message["role"] == "assistant" else "👤"
+                with st.chat_message(message["role"], avatar=avatar):
+                    st.write(message["text"])
 
-    if st.session_state.answer_error:
-        with st.chat_message("assistant"):
-            st.error(st.session_state.answer_error)
-
-    if st.session_state.pending_answer is not None:
-        if st.session_state.interview_error:
+        if st.session_state.answer_error:
             with st.chat_message("assistant"):
-                st.error(st.session_state.interview_error)
-            if st.button("Try again", key="retry_interview_request"):
-                st.session_state.interview_error = None
-                st.rerun()
-        else:
-            with st.spinner("The interviewer is thinking..."):
-                process_pending_answer()
-            if st.session_state.interview_error is None:
-                st.rerun()
+                st.error(st.session_state.answer_error)
 
-    if st.session_state.interview_finished and st.button(
-        "View my report",
-        key="view_my_report_button",
-    ):
-        st.session_state.phase = "report"
-        st.session_state.report = None
-        st.session_state.report_error = None
+        if st.session_state.pending_answer is not None:
+            if st.session_state.interview_error:
+                with st.chat_message("assistant"):
+                    st.error(st.session_state.interview_error)
+                if st.button("Try again", key="retry_interview_request"):
+                    st.session_state.interview_error = None
+                    st.rerun()
+            else:
+                with st.spinner("The interviewer is thinking..."):
+                    process_pending_answer()
+                if st.session_state.interview_error is None:
+                    st.rerun()
+
+        if st.session_state.interview_finished and st.button(
+            "View my report",
+            key="view_my_report_button",
+        ):
+            st.session_state.phase = "report"
+            st.session_state.report = None
+            st.session_state.report_error = None
+            st.rerun()
+
+        placeholder = (
+            "The interview has ended"
+            if st.session_state.interview_finished
+            else "Type your answer"
+        )
+        answer = st.chat_input(
+            placeholder=placeholder,
+            disabled=(
+                st.session_state.interview_finished
+                or st.session_state.pending_answer is not None
+            ),
+        )
+        if answer is None:
+            return
+
+        if not queue_candidate_answer(
+            answer,
+            st.session_state.interview_messages,
+            language,
+        ):
+            st.session_state.answer_error = answer_validation_message(language)
+            st.rerun()
+
+        st.session_state.answer_error = None
+        st.session_state.pending_answer = answer
+        st.session_state.interview_error = None
         st.rerun()
-
-    placeholder = (
-        "The interview has ended"
-        if st.session_state.interview_finished
-        else "Type your answer"
-    )
-    answer = st.chat_input(
-        placeholder=placeholder,
-        disabled=(
-            st.session_state.interview_finished
-            or st.session_state.pending_answer is not None
-        ),
-    )
-    if answer is None:
-        return
-
-    if not queue_candidate_answer(answer, st.session_state.interview_messages):
-        st.session_state.answer_error = ANSWER_VALIDATION_MESSAGE
-        st.rerun()
-
-    st.session_state.answer_error = None
-    st.session_state.pending_answer = answer
-    st.session_state.interview_error = None
-    st.rerun()
 
 
 def render_report_screen() -> None:
-    if st.session_state.report is None and st.session_state.report_error is None:
-        try:
-            settings = load_gemini_settings()
-            with st.spinner("Preparing your interview report..."):
-                report = generate_interview_report(
-                    settings,
-                    st.session_state.cv_text,
-                    st.session_state.job_title,
-                    st.session_state.interview_messages,
-                )
-        except (GeminiConfigurationError, GeminiServiceError) as exc:
-            st.session_state.report_error = str(exc)
+    language = st.session_state.get("interview_language", "en")
+    container_key = "arabic_report" if language == "ar" else "report_screen"
+    with st.container(key=container_key):
+        if st.session_state.report is None and st.session_state.report_error is None:
+            try:
+                settings = load_gemini_settings()
+                with st.spinner("Preparing your interview report..."):
+                    report = generate_interview_report(
+                        settings,
+                        st.session_state.cv_text,
+                        st.session_state.job_title,
+                        st.session_state.interview_messages,
+                        language=language,
+                    )
+            except (GeminiConfigurationError, GeminiServiceError) as exc:
+                st.session_state.report_error = str(exc)
+            else:
+                st.session_state.report = report
+
+        if st.session_state.report_error is not None:
+            st.error(st.session_state.report_error)
+            if st.button("Try again", key="retry_report_request"):
+                st.session_state.report_error = None
+                st.rerun()
         else:
-            st.session_state.report = report
+            render_report(
+                st.session_state.report,
+                st.session_state.job_title,
+                language=language,
+            )
 
-    if st.session_state.report_error is not None:
-        st.error(st.session_state.report_error)
-        if st.button("Try again", key="retry_report_request"):
-            st.session_state.report_error = None
-            st.rerun()
-    else:
-        render_report(
-            st.session_state.report,
-            st.session_state.job_title,
+        st.button(
+            "Start a new interview",
+            on_click=restart_interview,
+            key="start_new_interview",
         )
-
-    st.button(
-        "Start a new interview",
-        on_click=restart_interview,
-        key="start_new_interview",
-    )
 
 
 def main() -> None:

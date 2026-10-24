@@ -1,11 +1,15 @@
 import json
 import re
+import unicodedata
 from dataclasses import dataclass
 from typing import Literal, MutableMapping, TypedDict
 
 
 ANSWER_VALIDATION_MESSAGE = (
     "Please use at least 3 words with English letters (A–Z)."
+)
+ARABIC_ANSWER_VALIDATION_MESSAGE = (
+    "يرجى كتابة ثلاث كلمات على الأقل باستخدام حروف عربية أو إنجليزية."
 )
 JOB_TITLE_VALIDATION_MESSAGE = (
     "Please use English letters (A-Z) and spaces only."
@@ -43,8 +47,22 @@ def validate_job_title(job_title: str) -> bool:
     )
 
 
-def validate_answer(answer: str) -> bool:
-    return len(answer.split()) >= 3 and re.search(r"[A-Za-z]", answer) is not None
+def validate_answer(answer: str, language: str = "en") -> bool:
+    has_english_letter = re.search(r"[A-Za-z]", answer) is not None
+    has_arabic_letter = language == "ar" and any(
+        unicodedata.category(character).startswith("L")
+        and "ARABIC" in unicodedata.name(character, "")
+        for character in answer
+    )
+    return len(answer.split()) >= 3 and (has_english_letter or has_arabic_letter)
+
+
+def answer_validation_message(language: str = "en") -> str:
+    return (
+        ARABIC_ANSWER_VALIDATION_MESSAGE
+        if language == "ar"
+        else ANSWER_VALIDATION_MESSAGE
+    )
 
 
 def allowed_interviewer_actions(
@@ -89,8 +107,9 @@ def parse_interview_turn(response_text: str) -> InterviewTurn:
 def queue_candidate_answer(
     answer: str,
     messages: list[InterviewMessage],
+    language: str = "en",
 ) -> bool:
-    if not validate_answer(answer):
+    if not validate_answer(answer, language):
         return False
     messages.append({"role": "user", "text": answer})
     return True

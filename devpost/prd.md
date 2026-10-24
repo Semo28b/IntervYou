@@ -166,3 +166,8 @@ None. Accepted answers need at least 3 words and one English letter (A–Z); inv
 - After local PDF text extraction, a local CV-keyword check rejects text without multiple CV-like section/contact signals with: “This doesn't look like a CV. Please upload your CV as a PDF.” The app stays on the start screen and does not call Gemini.
 - The start card has additional responsive top/bottom spacing and a narrower centered width, without a fixed-height clipped layout.
 - The five main questions are explicitly sequenced: role-interest warm-up, two distinct CV-detail questions, company/team contribution, and deeper behavioral.
+
+## Arabic mode
+- The start screen offers English (default) or Arabic without adding a company-name field.
+- In Arabic mode, the interviewer uses simple, professional Modern Standard Arabic for the five main questions, follow-ups, and closing; the report text and labels are Arabic. The report and chat bubbles are laid out right-to-left.
+- Arabic CVs can be uploaded. Extracted text is Unicode-normalized before CV detection and Gemini requests. Arabic answers are accepted when they contain at least three words and an Arabic or English letter; the validation message is Arabic.

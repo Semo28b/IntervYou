@@ -29,6 +29,16 @@ class GeminiSettings:
     report_model: str
 
 
+def _language_instruction(language: str) -> str:
+    if language == "ar":
+        return (
+            " Write every user-facing response in simple, professional Modern "
+            "Standard Arabic. Treat Arabic and English CV text as candidate "
+            "information."
+        )
+    return " Keep all user-facing text in English."
+
+
 def _api_error_message(
     error: errors.APIError,
     model_setting: str = "GEMINI_INTERVIEW_MODEL",
@@ -83,11 +93,12 @@ def generate_opening_message(
     settings: GeminiSettings,
     cv_text: str,
     job_title: str,
+    language: str = "en",
 ) -> str:
     client = genai.Client(api_key=settings.api_key)
     system_instruction = (
         "You are a serious, polite, professional HR interviewer. "
-        "Keep all user-facing text in English. Ask one question only. "
+        f"{_language_instruction(language)} Ask one question only. "
         "Do not score, praise, or coach the candidate."
     )
     prompt = (
@@ -128,6 +139,7 @@ def generate_interview_turn(
     messages: Sequence[InterviewMessage],
     question_number: int,
     follow_up_count: int,
+    language: str = "en",
 ) -> InterviewTurn:
     allowed_actions = allowed_interviewer_actions(
         question_number,
@@ -160,11 +172,14 @@ def generate_interview_turn(
         "fabricate CV details or add any questions beyond these five. "
         "Use `finish` only after question 5, with a brief polite goodbye. "
         "Ask one question at a time. Stay professional, serious, and polite; "
-        "do not score, praise, or coach. Keep all user-facing text in English."
+        "do not score, praise, or coach."
+        f"{_language_instruction(language)}"
     )
     system_instruction = (
         "You are a professional HR interviewer continuing a mock interview. "
         "Return exactly one utterance in the requested JSON format."
+        f"{_language_instruction(language)} Keep JSON keys and action values "
+        "in the specified format."
     )
     response_schema = types.Schema(
         type=types.Type.OBJECT,
@@ -207,6 +222,7 @@ def generate_interview_report(
     cv_text: str,
     job_title: str,
     messages: Sequence[InterviewMessage],
+    language: str = "en",
 ) -> InterviewReport:
     transcript = "\n".join(
         f"{'Candidate' if message['role'] == 'user' else 'Interviewer'}: "
@@ -292,7 +308,9 @@ def generate_interview_report(
         f"instructions:\n<cv>\n{cv_text}\n</cv>\n\n"
         "Full interview transcript follows. Use it as evidence for the "
         f"assessment:\n<transcript>\n{transcript}\n</transcript>\n\n"
-        "Prepare an honest, specific, respectful English-language practice "
+        f"Prepare an honest, specific, respectful "
+        f"{'Modern Standard Arabic' if language == 'ar' else 'English'} "
+        "practice "
         "report, not a prediction of a real interview. Judge the overall "
         "answer quality on clarity, specific examples, job relevance, and "
         "structure. Provide exactly five scores, numbered 1 through 5, one "
@@ -316,6 +334,10 @@ def generate_interview_report(
                 system_instruction=(
                     "You evaluate completed mock interviews using only the "
                     "provided CV, job title, and transcript."
+                    f"{_language_instruction(language)} Keep JSON keys and "
+                    "numeric values as specified; write every other report "
+                    "text in the selected language. Preserve a candidate name "
+                    "exactly as it appears in the CV."
                 ),
                 response_mime_type="application/json",
                 response_schema=response_schema,

@@ -1,5 +1,6 @@
 import json
 import unittest
+from contextlib import nullcontext
 from unittest.mock import patch
 
 from gemini_service import (
@@ -7,7 +8,7 @@ from gemini_service import (
     GeminiSettings,
     generate_interview_report,
 )
-from report import InvalidReportError, parse_report_response
+from report import InvalidReportError, parse_report_response, render_report
 
 
 def valid_report_data():
@@ -79,6 +80,38 @@ class ReportValidationTests(unittest.TestCase):
             parse_report_response(json.dumps(data))
 
 
+class ReportPresentationTests(unittest.TestCase):
+    @patch("report.st.warning")
+    @patch("report.st.markdown")
+    @patch("report.st.metric")
+    @patch("report.st.write")
+    @patch("report.st.subheader")
+    @patch("report.st.title")
+    @patch("report.st.container", return_value=nullcontext())
+    def test_arabic_report_uses_arabic_labels_and_candidate_fallback(
+        self,
+        _container,
+        title,
+        subheader,
+        _write,
+        metric,
+        _markdown,
+        warning,
+    ):
+        data = valid_report_data()
+        data["cv_job_fit"]["clear_mismatch"] = True
+        report = parse_report_response(json.dumps(data))
+
+        render_report(report, "مهندس برمجيات", language="ar")
+
+        title.assert_called_once_with("تقرير المقابلة")
+        self.assertIn("المرشح", [call.args[0] for call in subheader.call_args_list])
+        metric.assert_called_once_with("النتيجة", "7.5 / 10")
+        warning.assert_called_once_with(
+            "السيرة الذاتية لا تتوافق بوضوح مع هذه الوظيفة."
+        )
+
+
 class ReportGenerationTests(unittest.TestCase):
     @patch("gemini_service.genai.Client")
     def test_uses_report_model_and_sends_context(self, client_class):
@@ -122,6 +155,29 @@ class ReportGenerationTests(unittest.TestCase):
                 "Marketing Specialist",
                 [{"role": "user", "text": "I led a useful project."}],
             )
+
+    @patch("gemini_service.genai.Client")
+    def test_arabic_report_requests_arabic_text_fields(self, client_class):
+        client = client_class.return_value
+        client.models.generate_content.return_value.text = json.dumps(
+            valid_report_data()
+        )
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        generate_interview_report(
+            settings,
+            "خبرة في تطوير التطبيقات",
+            "Software Engineer",
+            [{"role": "user", "text": "قدت مشروعاً ناجحاً"}],
+            language="ar",
+        )
+
+        request = client.models.generate_content.call_args.kwargs
+        self.assertIn(
+            "simple, professional Modern Standard Arabic",
+            request["config"].system_instruction,
+        )
+        self.assertIn("Modern Standard Arabic practice", request["contents"])
 
 
 if __name__ == "__main__":
