@@ -71,6 +71,8 @@ def localize_interview_error(message: str, language: str) -> str:
         return "تعذر معالجة رد المحاور. يرجى المحاولة مجدداً."
     if "invalid report" in message or "incomplete" in message:
         return "تعذر إعداد التقرير كاملاً. يرجى المحاولة مجدداً."
+    if "unsupported characters" in message:
+        return "أعاد Gemini نصاً يحتوي على أحرف غير متوقعة. يرجى المحاولة مجدداً."
     return "حدث خطأ أثناء معالجة المقابلة. يرجى المحاولة مجدداً."
 
 

@@ -1,6 +1,8 @@
+import json
 import time
+import unicodedata
 from dataclasses import dataclass
-from typing import Mapping, Sequence
+from typing import Callable, Mapping, Sequence
 
 from google import genai
 from google.genai import errors, types
@@ -38,9 +40,86 @@ def _language_instruction(language: str) -> str:
         return (
             " Write every user-facing response in simple, professional Modern "
             "Standard Arabic. Treat Arabic and English CV text as candidate "
-            "information."
+            "information. Use clear Arabic and Latin text, digits, and normal "
+            "punctuation only; do not use characters from any other script."
         )
     return " Keep all user-facing text in English."
+
+
+def _contains_unsupported_script(text: str) -> bool:
+    for character in text:
+        category = unicodedata.category(character)
+        name = unicodedata.name(character, "")
+        if (
+            character.isspace()
+            or category.startswith("P")
+            or (character.isascii() and category.startswith("S"))
+            or category == "Nd"
+            or "ARABIC" in name
+            or "LATIN" in name
+            or character in "\u200c\u200d\u200e\u200f\u2066\u2067\u2068\u2069"
+        ):
+            continue
+        return True
+    return False
+
+
+def _response_texts(response_text: str) -> list[str]:
+    try:
+        response_data = json.loads(response_text)
+    except (TypeError, json.JSONDecodeError):
+        return [response_text]
+
+    def collect(value) -> list[str]:
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, dict):
+            return [text for item in value.values() for text in collect(item)]
+        if isinstance(value, list):
+            return [text for item in value for text in collect(item)]
+        return []
+
+    return collect(response_data)
+
+
+def _generate_arabic_content_with_retry(
+    client: genai.Client,
+    model: str,
+    contents: str,
+    config: types.GenerateContentConfig,
+    is_valid: Callable[[str], bool] | None = None,
+) -> types.GenerateContentResponse:
+    for _ in range(2):
+        response = _generate_content_with_retries(client, model, contents, config)
+        response_text = response.text or ""
+        texts = _response_texts(response_text)
+        valid = is_valid(response_text) if is_valid else bool(texts)
+        if valid and not any(_contains_unsupported_script(text) for text in texts):
+            return response
+        contents += (
+            "\nRewrite your response in clear Modern Standard Arabic. Use only "
+            "Arabic and Latin text, digits, and normal punctuation; do not use "
+            "characters from any other script. Return the complete response."
+        )
+    raise GeminiServiceError(
+        "Gemini returned text with unsupported characters. Please try again."
+    )
+
+
+def _is_interview_response(text: str) -> bool:
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    return isinstance(data, dict) and isinstance(data.get("text"), str)
+
+
+def _is_json_object(text: str) -> bool:
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    return isinstance(data, dict)
 
 
 def _api_error_message(
@@ -149,16 +228,19 @@ def generate_opening_message(
     )
 
     try:
-        response = _generate_content_with_retries(
-            client,
-            settings.interview_model,
-            prompt,
-            types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.4,
-                max_output_tokens=400,
-            ),
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=0.4,
+            max_output_tokens=400,
         )
+        if language == "ar":
+            response = _generate_arabic_content_with_retry(
+                client, settings.interview_model, prompt, config
+            )
+        else:
+            response = _generate_content_with_retries(
+                client, settings.interview_model, prompt, config
+            )
     except errors.APIError as exc:
         raise GeminiServiceError(_api_error_message(exc)) from exc
 
@@ -233,18 +315,25 @@ def generate_interview_turn(
     client = genai.Client(api_key=settings.api_key)
 
     try:
-        response = _generate_content_with_retries(
-            client,
-            settings.interview_model,
-            prompt,
-            types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                response_schema=response_schema,
-                temperature=0.4,
-                max_output_tokens=400,
-            ),
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            response_mime_type="application/json",
+            response_schema=response_schema,
+            temperature=0.4,
+            max_output_tokens=400,
         )
+        if language == "ar":
+            response = _generate_arabic_content_with_retry(
+                client,
+                settings.interview_model,
+                prompt,
+                config,
+                _is_interview_response,
+            )
+        else:
+            response = _generate_content_with_retries(
+                client, settings.interview_model, prompt, config
+            )
     except errors.APIError as exc:
         raise GeminiServiceError(_api_error_message(exc)) from exc
 
@@ -366,25 +455,32 @@ def generate_interview_report(
     client = genai.Client(api_key=settings.api_key)
 
     try:
-        response = _generate_content_with_retries(
-            client,
-            settings.report_model,
-            prompt,
-            types.GenerateContentConfig(
-                system_instruction=(
-                    "You evaluate completed mock interviews using only the "
-                    "provided CV, job title, and transcript."
-                    f"{_language_instruction(language)} Keep JSON keys and "
-                    "numeric values as specified; write every other report "
-                    "text in the selected language. Preserve a candidate name "
-                    "exactly as it appears in the CV."
-                ),
-                response_mime_type="application/json",
-                response_schema=response_schema,
-                temperature=0.2,
-                max_output_tokens=2500,
+        config = types.GenerateContentConfig(
+            system_instruction=(
+                "You evaluate completed mock interviews using only the "
+                "provided CV, job title, and transcript."
+                f"{_language_instruction(language)} Keep JSON keys and "
+                "numeric values as specified; write every other report "
+                "text in the selected language. Preserve a candidate name "
+                "exactly as it appears in the CV."
             ),
+            response_mime_type="application/json",
+            response_schema=response_schema,
+            temperature=0.2,
+            max_output_tokens=2500,
         )
+        if language == "ar":
+            response = _generate_arabic_content_with_retry(
+                client,
+                settings.report_model,
+                prompt,
+                config,
+                _is_json_object,
+            )
+        else:
+            response = _generate_content_with_retries(
+                client, settings.report_model, prompt, config
+            )
     except errors.APIError as exc:
         raise GeminiServiceError(
             _api_error_message(exc, "GEMINI_REPORT_MODEL")

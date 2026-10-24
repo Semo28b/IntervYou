@@ -110,6 +110,18 @@ class ReportPresentationTests(unittest.TestCase):
 
     @patch("report.st.container", return_value=nullcontext())
     @patch("report.st.markdown")
+    def test_arabic_report_render_preserves_raw_glyphs(self, markdown, _container):
+        data = valid_report_data()
+        original_text = "خ▯ة عملية"
+        data["strengths"] = [original_text]
+        report = parse_report_response(json.dumps(data, ensure_ascii=False))
+
+        render_report(report, "مهندس برمجيات", language="ar")
+
+        self.assertIn(original_text, markdown.call_args.args[0])
+
+    @patch("report.st.container", return_value=nullcontext())
+    @patch("report.st.markdown")
     @patch("report.st.title")
     def test_english_report_keeps_existing_presentation(
         self, title, _markdown, _container
@@ -213,6 +225,32 @@ class ReportGenerationTests(unittest.TestCase):
             request["config"].system_instruction,
         )
         self.assertIn("Modern Standard Arabic practice", request["contents"])
+
+    @patch("gemini_service.genai.Client")
+    def test_arabic_report_retries_text_with_another_script(self, client_class):
+        client = client_class.return_value
+        invalid_report = valid_report_data()
+        invalid_report["strengths"] = ["خبرة 中文"]
+        client.models.generate_content.side_effect = [
+            Mock(text=json.dumps(invalid_report, ensure_ascii=False)),
+            Mock(text=json.dumps(valid_report_data(), ensure_ascii=False)),
+        ]
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        report = generate_interview_report(
+            settings,
+            "خبرة في تطوير التطبيقات",
+            "مهندس برمجيات",
+            [{"role": "user", "text": "قدت مشروعاً ناجحاً"}],
+            language="ar",
+        )
+
+        self.assertEqual(report.strengths, valid_report_data()["strengths"])
+        self.assertEqual(client.models.generate_content.call_count, 2)
+        self.assertIn(
+            "Rewrite your response in clear Modern Standard Arabic",
+            client.models.generate_content.call_args_list[1].kwargs["contents"],
+        )
 
 
 if __name__ == "__main__":

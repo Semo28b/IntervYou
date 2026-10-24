@@ -446,6 +446,61 @@ class GeminiSetupTests(unittest.TestCase):
         )
 
     @patch("gemini_service.genai.Client")
+    def test_arabic_opening_preserves_raw_text_and_retries_other_scripts(
+        self, client_class
+    ):
+        client = client_class.return_value
+        raw_text = "مرأً بك، ما الذي يجذبك إلى وظيفة C++؟"
+        client.models.generate_content.side_effect = [
+            Mock(text="欢迎 بك، ما الذي يجذبك إلى هذه الوظيفة؟"),
+            Mock(text=raw_text),
+        ]
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        message = generate_opening_message(
+            settings,
+            "الخبرة: C++",
+            "Developer",
+            language="ar",
+        )
+
+        self.assertEqual(message, raw_text)
+        self.assertEqual(client.models.generate_content.call_count, 2)
+        self.assertIn(
+            "characters from any other script",
+            client.models.generate_content.call_args_list[0].kwargs[
+                "config"
+            ].system_instruction,
+        )
+        self.assertIn(
+            "Rewrite your response in clear Modern Standard Arabic",
+            client.models.generate_content.call_args_list[1].kwargs["contents"],
+        )
+
+    @patch("gemini_service.genai.Client")
+    def test_arabic_opening_rejects_invalid_script_after_one_retry(
+        self, client_class
+    ):
+        client = client_class.return_value
+        client.models.generate_content.side_effect = [
+            Mock(text="مرحباً 欢迎"),
+            Mock(text="مرحباً مرحباً 欢迎"),
+        ]
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        with self.assertRaisesRegex(
+            GeminiServiceError, "unsupported characters"
+        ):
+            generate_opening_message(
+                settings,
+                "نص السيرة",
+                "مهندس برمجيات",
+                language="ar",
+            )
+
+        self.assertEqual(client.models.generate_content.call_count, 2)
+
+    @patch("gemini_service.genai.Client")
     def test_interview_prompt_specifies_all_five_question_roles(self, client_class):
         client = client_class.return_value
         client.models.generate_content.return_value.text = (
