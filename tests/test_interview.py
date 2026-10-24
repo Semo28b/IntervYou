@@ -184,6 +184,22 @@ class PdfExtractionTests(unittest.TestCase):
             )
         )
 
+    def test_cv_check_accepts_arabic_section_headings(self):
+        self.assertTrue(
+            looks_like_cv(
+                "الخبرة العملية\nمهندسة برمجيات\n"
+                "التعليم\nبكالوريوس علوم الحاسوب"
+            )
+        )
+
+    def test_cv_check_normalizes_arabic_presentation_forms(self):
+        self.assertTrue(
+            looks_like_cv(
+                "اﻟﺧﺑرة اﻟﻌﻣﻠﯾﺔ\nمهندسة برمجيات\n"
+                "اﻟﺗﻌﻟﯾم\nبكالوريوس علوم الحاسوب"
+            )
+        )
+
     def test_cv_check_rejects_non_cv_documents_offline(self):
         for text in (
             "Lecture notes: Introduction to biology and cellular structures.",
@@ -207,6 +223,16 @@ class PdfExtractionTests(unittest.TestCase):
         text = extract_pdf_text(b"test pdf bytes")
 
         self.assertEqual(text, "Candidate CV\nExperience")
+
+    @patch("pdf_utils.PdfReader")
+    def test_normalizes_arabic_presentation_forms_from_pdf(self, pdf_reader):
+        page = Mock()
+        page.extract_text.return_value = "اﻟﺳﯾرة اﻟذاﺗﯾﺔ"
+        pdf_reader.return_value.pages = [page]
+
+        text = extract_pdf_text(b"test pdf bytes")
+
+        self.assertEqual(text, "السيرة الذاتية")
 
     @patch("pdf_utils.PdfReader")
     def test_rejects_pdf_without_extractable_text(self, pdf_reader):
