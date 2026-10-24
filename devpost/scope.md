@@ -54,6 +54,7 @@ Someone opens the app locally and sees a simple start screen: upload CV (PDF), t
 - Start checks extracted PDF text locally before validating the job title or calling Gemini. The offline keyword heuristic requires contact details plus at least two CV sections, or structured work-history and education sections; it is free and unaffected by Gemini outages, but may miss unusual CV formats or accept similar documents.
 - The start card now has more top/bottom breathing room and a narrower centered width.
 - The five main questions now follow a fixed interview shape: role-interest warm-up, two CV-specific questions, a company/team contribution question, and a deeper behavioral question.
+- Gemini overloads (429, 503, or a high-demand response) are retried twice after short waits; the current model is reused, and no fallback model is configured.
 
 ## Arabic mode
 - English remains the default. Candidates may optionally choose Arabic for the interview; interviewer messages and report text use simple, professional Modern Standard Arabic, and the interview/report areas use right-to-left layout.

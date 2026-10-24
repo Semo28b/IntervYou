@@ -1,7 +1,9 @@
 import json
 import unittest
 from contextlib import nullcontext
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
+
+from google.genai import errors
 
 from gemini_service import (
     GeminiServiceError,
@@ -148,6 +150,32 @@ class ReportGenerationTests(unittest.TestCase):
         )
         self.assertIn("Test CV with project experience.", request["contents"])
         self.assertIn("I led a useful project.", request["contents"])
+
+    @patch("gemini_service.time.sleep")
+    @patch("gemini_service.genai.Client")
+    def test_retries_report_request_after_temporary_outage(
+        self, client_class, sleep
+    ):
+        client = client_class.return_value
+        client.models.generate_content.side_effect = [
+            errors.ServerError(
+                code=503,
+                response_json={"error": {"message": "Service unavailable"}},
+            ),
+            Mock(text=json.dumps(valid_report_data())),
+        ]
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        report = generate_interview_report(
+            settings,
+            "Test CV",
+            "Marketing Specialist",
+            [{"role": "user", "text": "I led a useful project."}],
+        )
+
+        self.assertEqual(report.candidate_name, "Candidate")
+        self.assertEqual(client.models.generate_content.call_count, 2)
+        self.assertEqual(sleep.call_args_list, [call(2)])
 
     @patch("gemini_service.genai.Client")
     def test_invalid_model_response_is_not_returned_as_report(self, client_class):

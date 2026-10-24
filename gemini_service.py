@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
@@ -22,6 +23,9 @@ class GeminiServiceError(RuntimeError):
     pass
 
 
+_RETRY_DELAYS_SECONDS = (2, 5)
+
+
 @dataclass(frozen=True)
 class GeminiSettings:
     api_key: str
@@ -43,6 +47,12 @@ def _api_error_message(
     error: errors.APIError,
     model_setting: str = "GEMINI_INTERVIEW_MODEL",
 ) -> str:
+    error_text = str(error).casefold()
+    if "high demand" in error_text or "overload" in error_text:
+        return (
+            "Gemini is temporarily unavailable or experiencing high demand. "
+            "Please wait a moment and try again."
+        )
     if error.code in (500, 502, 503, 504):
         return (
             "Gemini is temporarily unavailable or experiencing high demand. "
@@ -66,6 +76,33 @@ def _api_error_message(
     return (
         f"Gemini returned API error {error.code}. Check the model "
         "setting and API key permissions, then try again."
+    )
+
+
+def _generate_content_with_retries(
+    client: genai.Client,
+    model: str,
+    contents: str,
+    config: types.GenerateContentConfig,
+) -> types.GenerateContentResponse:
+    for attempt in range(len(_RETRY_DELAYS_SECONDS) + 1):
+        try:
+            return client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config,
+            )
+        except errors.APIError as exc:
+            retryable = _is_retryable_overload(exc)
+            if not retryable or attempt == len(_RETRY_DELAYS_SECONDS):
+                raise
+            time.sleep(_RETRY_DELAYS_SECONDS[attempt])
+
+
+def _is_retryable_overload(error: errors.APIError) -> bool:
+    return error.code in (429, 503) or (
+        "high demand" in str(error).casefold()
+        or "overload" in str(error).casefold()
     )
 
 
@@ -112,10 +149,11 @@ def generate_opening_message(
     )
 
     try:
-        response = client.models.generate_content(
-            model=settings.interview_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
+        response = _generate_content_with_retries(
+            client,
+            settings.interview_model,
+            prompt,
+            types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.4,
                 max_output_tokens=400,
@@ -195,10 +233,11 @@ def generate_interview_turn(
     client = genai.Client(api_key=settings.api_key)
 
     try:
-        response = client.models.generate_content(
-            model=settings.interview_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
+        response = _generate_content_with_retries(
+            client,
+            settings.interview_model,
+            prompt,
+            types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 response_mime_type="application/json",
                 response_schema=response_schema,
@@ -327,10 +366,11 @@ def generate_interview_report(
     client = genai.Client(api_key=settings.api_key)
 
     try:
-        response = client.models.generate_content(
-            model=settings.report_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
+        response = _generate_content_with_retries(
+            client,
+            settings.report_model,
+            prompt,
+            types.GenerateContentConfig(
                 system_instruction=(
                     "You evaluate completed mock interviews using only the "
                     "provided CV, job title, and transcript."

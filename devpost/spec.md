@@ -24,7 +24,7 @@ PRD ref: `prd.md > The Core Journey`.
 5. **Finish:** After question five, the interviewer gives a short goodbye. The input is disabled and **View my report** appears. When clicked, the app sends the CV text, job title, and full interview transcript to Gemini for the report.
 6. **Report and restart:** `report.py` displays the returned report on screen. **Start a new interview** clears the current session data and returns to the start screen.
 
-If an interview request fails, the app keeps the pending answer and context, shows a friendly message and **Try again**, and retries that same request rather than adding the answer twice. If report generation fails, offer a retry from the report action.
+Transient Gemini overloads (429, 503, or high-demand responses) are retried twice after 2 and 5 seconds using the same configured model. If an interview request still fails, the app keeps the pending answer and context, shows a friendly localized message and **Try again**, and retries that same request rather than adding the answer twice. Report and opening requests also keep their inputs available for a manual retry. No fallback model is configured.
 
 ## Stack
 

@@ -166,6 +166,7 @@ None. Accepted answers need at least 3 words and one English letter (A–Z); inv
 - After local PDF text extraction, an offline CV check runs before job-title validation or any Gemini request. It rejects text without contact details plus at least two CV sections, or structured work-history and education sections, with a localized message under the uploader. A rejected or unreadable PDF stays on the start screen and never starts an interview; the local check does not depend on Gemini availability.
 - The start card has additional responsive top/bottom spacing and a narrower centered width, without a fixed-height clipped layout.
 - The five main questions are explicitly sequenced: role-interest warm-up, two distinct CV-detail questions, company/team contribution, and deeper behavioral.
+- Gemini overloads are retried twice with short waits before a localized error appears; the current model is reused and failed actions remain retryable.
 
 ## Arabic mode
 - The start screen offers English (default) or Arabic without adding a company-name field.

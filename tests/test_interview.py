@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from google.genai import errors
 
@@ -493,8 +493,62 @@ class GeminiSetupTests(unittest.TestCase):
             config.system_instruction,
         )
 
+    @patch("gemini_service.time.sleep")
     @patch("gemini_service.genai.Client")
-    def test_reports_temporary_gemini_unavailability(self, client_class):
+    def test_interview_turn_retries_temporary_outage(self, client_class, sleep):
+        client = client_class.return_value
+        client.models.generate_content.side_effect = [
+            errors.ServerError(
+                code=503,
+                response_json={"error": {"message": "Service unavailable"}},
+            ),
+            Mock(text='{"action": "question", "text": "What did you learn?"}'),
+        ]
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        turn = generate_interview_turn(
+            settings,
+            "CV text",
+            "Software Engineer",
+            [{"role": "user", "text": "I learned from a project."}],
+            question_number=1,
+            follow_up_count=0,
+        )
+
+        self.assertEqual(turn.text, "What did you learn?")
+        self.assertEqual(client.models.generate_content.call_count, 2)
+        sleep.assert_called_once_with(2)
+
+    @patch("gemini_service.time.sleep")
+    @patch("gemini_service.genai.Client")
+    def test_retries_overload_errors_before_opening_succeeds(
+        self, client_class, sleep
+    ):
+        client = client_class.return_value
+        client.models.generate_content.side_effect = [
+            errors.ServerError(
+                code=503,
+                response_json={"error": {"message": "Service unavailable"}},
+            ),
+            errors.ClientError(
+                code=429,
+                response_json={"error": {"message": "Rate limited"}},
+            ),
+            Mock(text="Welcome. Why are you interested in this role?"),
+        ]
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        message = generate_opening_message(settings, "CV text", "Job title")
+
+        self.assertIn("Why are you interested", message)
+        self.assertEqual(client.models.generate_content.call_count, 3)
+        self.assertEqual(sleep.call_args_list, [call(2), call(5)])
+
+    @patch("gemini_service.time.sleep")
+    @patch("gemini_service.genai.Client")
+    def test_reports_temporary_gemini_unavailability_after_retries(
+        self, client_class, sleep
+    ):
         client = client_class.return_value
         client.models.generate_content.side_effect = errors.ServerError(
             code=503,
@@ -510,6 +564,44 @@ class GeminiSetupTests(unittest.TestCase):
             GeminiServiceError, "temporarily unavailable or experiencing high demand"
         ):
             generate_opening_message(settings, "CV text", "Job title")
+        self.assertEqual(client.models.generate_content.call_count, 3)
+        self.assertEqual(sleep.call_args_list, [call(2), call(5)])
+
+    @patch("gemini_service.time.sleep")
+    @patch("gemini_service.genai.Client")
+    def test_does_not_retry_non_overload_api_errors(self, client_class, sleep):
+        client = client_class.return_value
+        client.models.generate_content.side_effect = errors.ClientError(
+            code=400,
+            response_json={"error": {"message": "Invalid argument"}},
+        )
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        with self.assertRaisesRegex(GeminiServiceError, "Gemini returned API error 400"):
+            generate_opening_message(settings, "CV text", "Job title")
+
+        client.models.generate_content.assert_called_once()
+        sleep.assert_not_called()
+
+    @patch("gemini_service.time.sleep")
+    @patch("gemini_service.genai.Client")
+    def test_retries_and_localizes_high_demand_error_text(
+        self, client_class, sleep
+    ):
+        client = client_class.return_value
+        client.models.generate_content.side_effect = errors.ClientError(
+            code=400,
+            response_json={"error": {"message": "The service is in high demand"}},
+        )
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        with self.assertRaisesRegex(
+            GeminiServiceError, "temporarily unavailable or experiencing high demand"
+        ):
+            generate_opening_message(settings, "CV text", "Job title")
+
+        self.assertEqual(client.models.generate_content.call_count, 3)
+        self.assertEqual(sleep.call_args_list, [call(2), call(5)])
 
     @patch("gemini_service.genai.Client")
     def test_interview_request_uses_json_and_enforces_current_action_choices(
