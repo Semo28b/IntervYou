@@ -49,3 +49,8 @@ Someone opens the app locally and sees a simple start screen: upload CV (PDF), t
 - **Saving CVs or interview history** — CVs are not saved; restart is enough for the demo
 - **A large public question bank** — questions must come from the uploaded CV and this job
 - **Feedback during the interview** — breaks the “stay in role” kernel
+
+## Post-build changes
+- Start rejects extracted PDF text without multiple CV-like section/contact signals before making any Gemini request. This local keyword check is offline and free, but may miss unusual CV formats or accept non-CV text with similar signals.
+- The start card now has more top/bottom breathing room and a narrower centered width.
+- The five main questions now follow a fixed interview shape: role-interest warm-up, two CV-specific questions, a company/team contribution question, and a deeper behavioral question.

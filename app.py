@@ -18,7 +18,7 @@ from interview import (
     record_interviewer_turn,
     validate_job_title,
 )
-from pdf_utils import UnreadablePDFError, extract_pdf_text
+from pdf_utils import UnreadablePDFError, extract_pdf_text, looks_like_cv
 from report import render_report
 
 
@@ -48,8 +48,12 @@ def inject_theme_styles() -> None:
         <style>
         .block-container {
             max-width: 62rem;
-            padding-top: 2.5rem;
-            padding-bottom: 3rem;
+            padding-top: clamp(2.5rem, 7vh, 4.5rem);
+            padding-bottom: clamp(2rem, 5vh, 3rem);
+        }
+        .st-key-start_card {
+            max-width: 46rem;
+            margin-inline: auto;
         }
         .brand-pill {
             display: inline-block;
@@ -118,7 +122,7 @@ def inject_theme_styles() -> None:
 
 
 def render_start_screen() -> None:
-    with st.container(border=True):
+    with st.container(border=True, key="start_card"):
         st.markdown(
             '<div class="brand-pill">AI MOCK INTERVIEW</div>',
             unsafe_allow_html=True,
@@ -176,6 +180,13 @@ def render_start_screen() -> None:
             set_start_error(
                 "cv",
                 "We couldn't read text in this PDF. Please upload a text-based PDF CV.",
+            )
+            st.rerun()
+
+        if not looks_like_cv(cv_text):
+            set_start_error(
+                "cv",
+                "This doesn't look like a CV. Please upload your CV as a PDF.",
             )
             st.rerun()
 

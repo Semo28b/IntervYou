@@ -22,7 +22,7 @@ from interview import (
     validate_answer,
     validate_job_title,
 )
-from pdf_utils import UnreadablePDFError, extract_pdf_text
+from pdf_utils import UnreadablePDFError, extract_pdf_text, looks_like_cv
 
 
 class InterviewInputTests(unittest.TestCase):
@@ -167,6 +167,35 @@ class InterviewProgressTests(unittest.TestCase):
 
 
 class PdfExtractionTests(unittest.TestCase):
+    def test_cv_check_accepts_resume_sections_and_contact_details(self):
+        self.assertTrue(
+            looks_like_cv(
+                "Jordan Lee\njordan@example.com\n"
+                "Experience\nSoftware intern\nEducation\nBSc Computer Science"
+            )
+        )
+
+    def test_cv_check_recognizes_letter_spaced_section_headings(self):
+        self.assertTrue(
+            looks_like_cv(
+                "C O N T A C T\njordan@example.com\n"
+                "E D U C A T I O N\nBSc Civil Engineering\n"
+                "A C A D E M I C  P R O J E C T S"
+            )
+        )
+
+    def test_cv_check_rejects_non_cv_documents_offline(self):
+        for text in (
+            "Lecture notes: Introduction to biology and cellular structures.",
+            "Article: Research on education and learning outcomes.",
+            (
+                "Registration form\nName: Jordan Lee\n"
+                "Email: jordan@example.com\nEducation level: undergraduate"
+            ),
+        ):
+            with self.subTest(text=text):
+                self.assertFalse(looks_like_cv(text))
+
     @patch("pdf_utils.PdfReader")
     def test_extracts_and_joins_text_from_pages(self, pdf_reader):
         first = Mock()
@@ -233,6 +262,29 @@ class GeminiSetupTests(unittest.TestCase):
         self.assertEqual(request["model"], "interview-model")
         self.assertIn("CV mentions community campaigns.", request["contents"])
         self.assertIn("Marketing Specialist", request["contents"])
+        self.assertIn("why they are interested in this role", request["contents"])
+
+    @patch("gemini_service.genai.Client")
+    def test_interview_prompt_specifies_all_five_question_roles(self, client_class):
+        client = client_class.return_value
+        client.models.generate_content.return_value.text = (
+            '{"action": "question", "text": "What did you learn?"}'
+        )
+        settings = GeminiSettings("test-key", "interview-model", "report-model")
+
+        generate_interview_turn(
+            settings,
+            "CV text",
+            "Software Engineer",
+            [{"role": "user", "text": "I learned from a project."}],
+            question_number=1,
+            follow_up_count=2,
+        )
+
+        prompt = client.models.generate_content.call_args.kwargs["contents"]
+        self.assertIn("question 2 and question 3 each ask", prompt)
+        self.assertIn("question 4 asks what the candidate would contribute", prompt)
+        self.assertIn("question 5 is a deeper behavioral question", prompt)
 
     @patch("gemini_service.genai.Client")
     def test_reports_temporary_gemini_unavailability(self, client_class):

@@ -183,3 +183,8 @@ Versions should be pinned in `requirements.txt` after checking compatible curren
 - **Clarified uncertainty:** The learner asked what Gemini receives, when it receives it, and how the app remembers the chat. Clarified that Python extracts readable text locally; Gemini gets that text (potentially including name/contact details), the job title, and relevant conversation context for generation; Streamlit holds the app's copy in temporary session memory only. Use fake CVs during the POC.
 - **Verify early in the build:** compatible Python/package versions; current Flash model ID, rate limits, pricing, and API data-use terms; whether `pypdf` extracts enough text from the selected test CVs.
 - **No other unresolved product or architecture choices.** Deployment remains optional and out of scope for this local POC.
+
+## Post-build changes
+- `pdf_utils.py` uses an offline lexical heuristic after text extraction: two or more distinct CV section/contact signal groups are required. It avoids an additional Gemini request, cost, latency, and dependency on API availability; the tradeoff is possible false positives/negatives for unusual CV formats or documents containing similar terms.
+- `app.py` gives the start card responsive top/bottom spacing and a narrower centered width while leaving page height natural so smaller windows can scroll instead of clipping.
+- `gemini_service.py` now specifies the five-question sequence: role-interest warm-up, two distinct CV-specific details, contribution to the company/team, and a deeper behavioral question.
