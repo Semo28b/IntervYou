@@ -53,7 +53,7 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertEqual(app.selectbox[0].label, "لغة المقابلة")
         self.assertEqual(
             app.file_uploader[0].label,
-            "ارفع سيرتك الذاتية (\u2068PDF)\u2069",
+            "ارفع سيرتك الذاتية \u2068(PDF)\u2069",
         )
         self.assertEqual(app.text_input[0].label, "المسمى الوظيفي")
         self.assertEqual(app.text_input[0].placeholder, "مهندس برمجيات")
@@ -97,6 +97,14 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertEqual(
             isolate_latin_runs("راجع R&D Manager وPDF"),
             "راجع \u2068R&D Manager\u2069 و\u2068PDF\u2069",
+        )
+        self.assertEqual(
+            isolate_latin_runs(".(Data-driven)"),
+            "\u2068.(Data-driven)\u2069",
+        )
+        self.assertEqual(
+            isolate_latin_runs("مرحباً،Dar Anwar"),
+            "مرحباً\u2068،Dar Anwar\u2069",
         )
 
     def test_arabic_start_reports_invalid_title_after_cv_upload(self):
