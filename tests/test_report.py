@@ -81,35 +81,42 @@ class ReportValidationTests(unittest.TestCase):
 
 
 class ReportPresentationTests(unittest.TestCase):
-    @patch("report.st.warning")
-    @patch("report.st.markdown")
-    @patch("report.st.metric")
-    @patch("report.st.write")
-    @patch("report.st.subheader")
-    @patch("report.st.title")
     @patch("report.st.container", return_value=nullcontext())
-    def test_arabic_report_uses_arabic_labels_and_candidate_fallback(
-        self,
-        _container,
-        title,
-        subheader,
-        _write,
-        metric,
-        _markdown,
-        warning,
+    @patch("report.st.markdown")
+    def test_arabic_report_uses_rtl_layout_and_arabic_labels(
+        self, markdown, _container
     ):
         data = valid_report_data()
         data["cv_job_fit"]["clear_mismatch"] = True
+        data["cv_suggestions"][0] = "<add measurable results>"
         report = parse_report_response(json.dumps(data))
 
         render_report(report, "مهندس برمجيات", language="ar")
 
-        title.assert_called_once_with("تقرير المقابلة")
-        self.assertIn("المرشح", [call.args[0] for call in subheader.call_args_list])
-        metric.assert_called_once_with("النتيجة", "7.5 / 10")
-        warning.assert_called_once_with(
-            "السيرة الذاتية لا تتوافق بوضوح مع هذه الوظيفة."
-        )
+        markup = markdown.call_args.args[0]
+        self.assertIn('<div dir="rtl" style="text-align:right;">', markup)
+        self.assertIn("المرشح", markup)
+        self.assertIn("مدى توافق السيرة الذاتية مع الوظيفة", markup)
+        self.assertIn("نقاط القوة ذات الصلة", markup)
+        self.assertIn("اقتراحات لتحسين السيرة الذاتية", markup)
+        self.assertIn("dir=\"rtl\"", markup)
+        self.assertIn("<ul dir=\"rtl\"", markup)
+        self.assertIn("<ol dir=\"rtl\"", markup)
+        self.assertIn("background:#FFF1C4", markup)
+        self.assertIn("&lt;add measurable results&gt;", markup)
+        self.assertNotIn("<add measurable results>", markup)
+
+    @patch("report.st.container", return_value=nullcontext())
+    @patch("report.st.markdown")
+    @patch("report.st.title")
+    def test_english_report_keeps_existing_presentation(
+        self, title, _markdown, _container
+    ):
+        report = parse_report_response(json.dumps(valid_report_data()))
+
+        render_report(report, "Marketing Specialist")
+
+        title.assert_called_once_with("Interview Report")
 
 
 class ReportGenerationTests(unittest.TestCase):

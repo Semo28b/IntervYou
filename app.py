@@ -50,6 +50,30 @@ def set_start_error(field: str, message: str) -> None:
     st.session_state.start_error_message = message
 
 
+def localize_interview_error(message: str, language: str) -> str:
+    if language != "ar":
+        return message
+    if "temporarily unavailable" in message:
+        return "خدمة Gemini غير متاحة مؤقتاً. يرجى المحاولة بعد قليل."
+    if "rate limit or quota" in message:
+        return "تم بلوغ حد استخدام Gemini. يرجى المحاولة لاحقاً."
+    if "rejected the API key" in message:
+        return "تعذر التحقق من مفتاح Gemini. يرجى مراجعة الإعدادات."
+    if "model was not found" in message:
+        return "لم يتم العثور على نموذج Gemini المحدد. يرجى مراجعة الإعدادات."
+    if "Gemini returned API error" in message:
+        return "حدث خطأ في خدمة Gemini. يرجى التحقق من الإعدادات والمحاولة مجدداً."
+    if "Add GEMINI_" in message or "Create .streamlit/secrets.toml" in message:
+        return "يرجى إعداد مفتاح Gemini والنماذج في ملف الإعدادات المحلي."
+    if "empty opening message" in message:
+        return "لم يصل سؤال من المحاور. يرجى المحاولة مجدداً."
+    if "unusable interview response" in message:
+        return "تعذر معالجة رد المحاور. يرجى المحاولة مجدداً."
+    if "invalid report" in message or "incomplete" in message:
+        return "تعذر إعداد التقرير كاملاً. يرجى المحاولة مجدداً."
+    return "حدث خطأ أثناء معالجة المقابلة. يرجى المحاولة مجدداً."
+
+
 def inject_theme_styles() -> None:
     st.markdown(
         """
@@ -126,12 +150,13 @@ def inject_theme_styles() -> None:
             text-align: right;
         }
         .st-key-arabic_interview [data-testid="stChatMessageContent"],
-        .st-key-arabic_interview [data-testid="stChatInput"] textarea {
+        .st-key-arabic_interview [data-testid="stChatInput"] textarea,
+        .stApp:has(.st-key-arabic_interview) [data-testid="stChatInput"] textarea {
             direction: rtl;
             text-align: right;
         }
-        .st-key-arabic_report [data-testid="stMetricValue"] {
-            direction: rtl;
+        .st-key-arabic_interview [data-testid="stHorizontalBlock"] {
+            direction: ltr;
         }
         [data-testid="stChatMessage"] {
             border-radius: 16px;
@@ -319,18 +344,32 @@ def render_interview_screen() -> None:
         if st.session_state.pending_answer is not None:
             if st.session_state.interview_error:
                 with st.chat_message("assistant"):
-                    st.error(st.session_state.interview_error)
-                if st.button("Try again", key="retry_interview_request"):
+                    st.error(
+                        localize_interview_error(
+                            st.session_state.interview_error,
+                            language,
+                        )
+                    )
+                retry_label = "حاول مرة أخرى" if language == "ar" else "Try again"
+                if st.button(retry_label, key="retry_interview_request"):
                     st.session_state.interview_error = None
                     st.rerun()
             else:
-                with st.spinner("The interviewer is thinking..."):
+                thinking_message = (
+                    "يفكر المحاور..."
+                    if language == "ar"
+                    else "The interviewer is thinking..."
+                )
+                with st.spinner(thinking_message):
                     process_pending_answer()
                 if st.session_state.interview_error is None:
                     st.rerun()
 
+        report_button_label = (
+            "عرض تقريري" if language == "ar" else "View my report"
+        )
         if st.session_state.interview_finished and st.button(
-            "View my report",
+            report_button_label,
             key="view_my_report_button",
         ):
             st.session_state.phase = "report"
@@ -338,11 +377,18 @@ def render_interview_screen() -> None:
             st.session_state.report_error = None
             st.rerun()
 
-        placeholder = (
-            "The interview has ended"
-            if st.session_state.interview_finished
-            else "Type your answer"
-        )
+        if language == "ar":
+            placeholder = (
+                "انتهت المقابلة"
+                if st.session_state.interview_finished
+                else "اكتب إجابتك"
+            )
+        else:
+            placeholder = (
+                "The interview has ended"
+                if st.session_state.interview_finished
+                else "Type your answer"
+            )
         answer = st.chat_input(
             placeholder=placeholder,
             disabled=(
@@ -374,7 +420,12 @@ def render_report_screen() -> None:
         if st.session_state.report is None and st.session_state.report_error is None:
             try:
                 settings = load_gemini_settings()
-                with st.spinner("Preparing your interview report..."):
+                spinner_message = (
+                    "جارٍ إعداد تقرير المقابلة..."
+                    if language == "ar"
+                    else "Preparing your interview report..."
+                )
+                with st.spinner(spinner_message):
                     report = generate_interview_report(
                         settings,
                         st.session_state.cv_text,
@@ -388,8 +439,14 @@ def render_report_screen() -> None:
                 st.session_state.report = report
 
         if st.session_state.report_error is not None:
-            st.error(st.session_state.report_error)
-            if st.button("Try again", key="retry_report_request"):
+            st.error(
+                localize_interview_error(
+                    st.session_state.report_error,
+                    language,
+                )
+            )
+            retry_label = "حاول مرة أخرى" if language == "ar" else "Try again"
+            if st.button(retry_label, key="retry_report_request"):
                 st.session_state.report_error = None
                 st.rerun()
         else:
@@ -399,15 +456,28 @@ def render_report_screen() -> None:
                 language=language,
             )
 
+        new_interview_label = (
+            "ابدأ مقابلة جديدة" if language == "ar" else "Start a new interview"
+        )
         st.button(
-            "Start a new interview",
+            new_interview_label,
             on_click=restart_interview,
             key="start_new_interview",
         )
 
 
 def main() -> None:
-    st.set_page_config(page_title="AI Mock Interview", layout="centered")
+    selected_language = st.session_state.get("interview_language")
+    if selected_language is None:
+        selected_language = (
+            "ar" if st.session_state.get("language_choice") == "العربية" else "en"
+        )
+    page_title = (
+        "مقابلة عمل تجريبية"
+        if selected_language == "ar"
+        else "AI Mock Interview"
+    )
+    st.set_page_config(page_title=page_title, layout="centered")
     inject_theme_styles()
     defaults = {
         "phase": "start",

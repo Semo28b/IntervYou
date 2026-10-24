@@ -1,6 +1,8 @@
+from html import escape
 import json
 import math
 from dataclasses import dataclass
+from textwrap import dedent
 from typing import Any
 
 import streamlit as st
@@ -207,38 +209,78 @@ def _render_arabic_report(report: InterviewReport, job_title: str) -> None:
     candidate_name = (
         "المرشح" if report.candidate_name == "Candidate" else report.candidate_name
     )
+    question_scores = "".join(
+        "<li>"
+        f"<strong>السؤال {item.question_number}: {item.score:g} / 10</strong>"
+        f"<p>{escape(item.reason)}</p>"
+        "</li>"
+        for item in report.question_scores
+    )
+    mismatch_notice = (
+        '<div role="alert" style="background:#FFF1C4; padding:0.8rem 1rem; '
+        'border-radius:0.75rem; margin:0.5rem 0 1rem;">'
+        "السيرة الذاتية لا تتوافق بوضوح مع هذه الوظيفة."
+        "</div>"
+        if report.cv_job_fit.clear_mismatch
+        else ""
+    )
+
     with st.container(border=True):
-        st.title("تقرير المقابلة")
-        st.subheader(candidate_name)
-        st.write(job_title)
+        st.markdown(
+            dedent(
+                f"""
+        <div dir="rtl" style="text-align:right;">
+          <h1>تقرير المقابلة</h1>
+          <h3>{escape(candidate_name)}</h3>
+          <p>{escape(job_title)}</p>
 
-        st.subheader("النتيجة الإجمالية")
-        st.metric("النتيجة", f"{report.overall_score:g} / 10")
-        st.write(
-            f"بناءً على المقابلة، نتيجتك هي "
-            f"{report.overall_score:g} من 10."
+          <h2>النتيجة الإجمالية</h2>
+          <p><strong>النتيجة: {report.overall_score:g} / 10</strong></p>
+          <p>بناءً على المقابلة، نتيجتك هي {report.overall_score:g} من 10.</p>
+          <p>{escape(report.overall_reason)}</p>
+
+          <h2>نتائج الأسئلة</h2>
+          <ol dir="rtl" style="text-align:right; padding-right:1.5rem; padding-left:0;">
+            {question_scores}
+          </ol>
+
+          <h2>نقاط القوة</h2>
+          {_render_html_list(report.strengths, "لا توجد نقاط محددة.")}
+
+          <h2>مجالات التحسين</h2>
+          {_render_html_list(report.areas_to_improve, "لا توجد نقاط محددة.")}
+
+          <h2>مدى توافق السيرة الذاتية مع الوظيفة</h2>
+          {mismatch_notice}
+          <h3>نقاط القوة ذات الصلة</h3>
+          {_render_html_list(report.cv_job_fit.strengths, "لا توجد نقاط محددة.")}
+          <h3>الفجوات</h3>
+          {_render_html_list(report.cv_job_fit.gaps, "لا توجد فجوات محددة.")}
+
+          <h2>اقتراحات لتحسين السيرة الذاتية</h2>
+          {_render_html_list(
+              report.cv_suggestions,
+              "لا توجد اقتراحات محددة.",
+              ordered=True,
+          )}
+        </div>
+                """
+            ),
+            unsafe_allow_html=True,
         )
-        st.write(report.overall_reason)
 
-        st.subheader("نتائج الأسئلة")
-        for item in report.question_scores:
-            st.markdown(f"**السؤال {item.question_number}: {item.score:g} / 10**")
-            st.write(item.reason)
 
-        st.subheader("نقاط القوة")
-        _render_text_list(report.strengths, "لا توجد نقاط محددة.")
-
-        st.subheader("مجالات التحسين")
-        _render_text_list(report.areas_to_improve, "لا توجد نقاط محددة.")
-
-        st.subheader("مدى توافق السيرة الذاتية مع الوظيفة")
-        if report.cv_job_fit.clear_mismatch:
-            st.warning("السيرة الذاتية لا تتوافق بوضوح مع هذه الوظيفة.")
-        st.markdown("**نقاط القوة ذات الصلة**")
-        _render_text_list(report.cv_job_fit.strengths, "لا توجد نقاط محددة.")
-        st.markdown("**الفجوات**")
-        _render_text_list(report.cv_job_fit.gaps, "لا توجد فجوات محددة.")
-
-        st.subheader("اقتراحات لتحسين السيرة الذاتية")
-        for index, suggestion in enumerate(report.cv_suggestions, start=1):
-            st.write(f"{index}. {suggestion}")
+def _render_html_list(
+    items: list[str],
+    empty_message: str,
+    ordered: bool = False,
+) -> str:
+    if not items:
+        return f"<p>{escape(empty_message)}</p>"
+    tag = "ol" if ordered else "ul"
+    rows = "".join(f"<li>{escape(item)}</li>" for item in items)
+    return (
+        f'<{tag} dir="rtl" style="text-align:right; '
+        f'padding-right:1.5rem; padding-left:0;">'
+        f"{rows}</{tag}>"
+    )
