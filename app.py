@@ -98,9 +98,32 @@ def inject_theme_styles() -> None:
             padding-top: clamp(2.5rem, 7vh, 4.5rem);
             padding-bottom: clamp(2rem, 5vh, 3rem);
         }
-        .st-key-start_card {
+        .st-key-start_card,
+        .st-key-arabic_start_card {
             max-width: 46rem;
             margin-inline: auto;
+        }
+        .st-key-arabic_start_card {
+            direction: rtl;
+            text-align: right;
+        }
+        .st-key-arabic_start_card [data-testid="stWidgetLabel"],
+        .st-key-arabic_start_card [data-testid="stWidgetLabel"] p {
+            direction: rtl;
+            text-align: right;
+        }
+        .st-key-arabic_start_card [data-testid="stSelectbox"],
+        .st-key-arabic_start_card [data-testid="stSelectbox"] > div {
+            direction: rtl;
+            text-align: right;
+        }
+        .st-key-arabic_start_card input {
+            direction: rtl;
+            text-align: right;
+            unicode-bidi: plaintext;
+        }
+        .st-key-arabic_start_card [data-testid="stButton"] {
+            direction: rtl;
         }
         .brand-pill {
             display: inline-block;
@@ -183,10 +206,9 @@ def inject_theme_styles() -> None:
 
 
 def render_start_screen() -> None:
-    with st.container(border=True, key="start_card"):
-        language = (
-            "ar" if st.session_state.get("language_choice") == "العربية" else "en"
-        )
+    language = "ar" if st.session_state.get("language_choice") == "العربية" else "en"
+    container_key = "arabic_start_card" if language == "ar" else "start_card"
+    with st.container(border=True, key=container_key):
         brand = "AI MOCK INTERVIEW"
         if language == "ar":
             brand = isolate_latin_runs(brand)

@@ -42,6 +42,53 @@ def complete_report():
 
 
 class ArabicInterfaceTests(unittest.TestCase):
+    def test_arabic_start_screen_localizes_and_scopes_rtl_styles(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
+        app.session_state["language_choice"] = "العربية"
+
+        app.run(timeout=20)
+
+        self.assertFalse(app.exception)
+        self.assertTrue(any("مقابلتك القادمة" in item.value for item in app.title))
+        self.assertEqual(app.selectbox[0].label, "لغة المقابلة")
+        self.assertEqual(
+            app.file_uploader[0].label,
+            "ارفع سيرتك الذاتية (\u2068PDF)\u2069",
+        )
+        self.assertEqual(app.text_input[0].label, "المسمى الوظيفي")
+        self.assertEqual(app.text_input[0].placeholder, "مهندس برمجيات")
+        self.assertTrue(any("Google Gemini" in item.value for item in app.caption))
+        self.assertTrue(any(item.label == "ابدأ المقابلة" for item in app.button))
+
+        styles = app.markdown[0].value
+        self.assertIn(
+            ".st-key-arabic_start_card {\n    direction: rtl;\n    text-align: right;",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-arabic_start_card input {\n"
+            "    direction: rtl;\n"
+            "    text-align: right;\n"
+            "    unicode-bidi: plaintext;",
+            styles,
+        )
+        self.assertNotIn(
+            ".st-key-start_card {\n    direction: rtl;",
+            styles,
+        )
+
+    def test_english_start_screen_remains_english(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
+
+        app.run(timeout=20)
+
+        self.assertFalse(app.exception)
+        self.assertTrue(any("Ready to practice" in item.value for item in app.title))
+        self.assertEqual(app.selectbox[0].label, "Interview language")
+        self.assertEqual(app.file_uploader[0].label, "Upload your CV (PDF)")
+        self.assertEqual(app.text_input[0].label, "Job title you're applying for")
+        self.assertTrue(any(item.label == "Start interview" for item in app.button))
+
     def test_latin_runs_are_isolated_inside_arabic_text(self):
         self.assertEqual(
             isolate_latin_runs("المسمى CES - C++ مناسب"),
