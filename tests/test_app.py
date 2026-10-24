@@ -200,7 +200,9 @@ class ArabicInterfaceTests(unittest.TestCase):
 
         self.assertFalse(app.exception)
         self.assertTrue(any(item.label == "حاول مرة أخرى" for item in app.button))
-        self.assertTrue(any("خدمة Gemini" in item.value for item in app.error))
+        self.assertTrue(
+            any("خدمة \u2068Gemini\u2069" in item.value for item in app.error)
+        )
 
     def test_arabic_report_uses_localized_restart_control(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
