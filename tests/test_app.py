@@ -60,6 +60,42 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertFalse(any(item.label == "View my report" for item in app.button))
         self.assertEqual(app.chat_input[0].placeholder, "انتهت المقابلة")
 
+    def test_report_shown_after_interview_renders_one_shot_scroll_to_top(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
+        app.session_state["phase"] = "report"
+        app.session_state["interview_language"] = "en"
+        app.session_state["job_title"] = "Software Engineer"
+        app.session_state["report"] = complete_report()
+        app.session_state["report_error"] = None
+        app.session_state["scroll_to_top_pending"] = True
+
+        app.run(timeout=20)
+
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.html), 1)
+        self.assertIn("window.scrollTo", app.html[0].value)
+        self.assertFalse(app.session_state["scroll_to_top_pending"])
+
+    def test_report_scroll_hook_runs_in_arabic_and_start_after_restart(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
+        app.session_state["phase"] = "report"
+        app.session_state["interview_language"] = "ar"
+        app.session_state["job_title"] = "مهندس برمجيات"
+        app.session_state["report"] = complete_report()
+        app.session_state["report_error"] = None
+        app.session_state["scroll_to_top_pending"] = True
+
+        app.run(timeout=20)
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.html), 1)
+        self.assertFalse(app.session_state["scroll_to_top_pending"])
+
+        app.button[0].click().run(timeout=20)
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["phase"], "start")
+        self.assertEqual(len(app.html), 1)
+        self.assertFalse(app.session_state["scroll_to_top_pending"])
+
     def test_arabic_chat_retry_and_error_text_are_localized(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
         app.session_state["phase"] = "interview"

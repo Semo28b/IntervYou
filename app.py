@@ -315,6 +315,40 @@ def process_pending_answer() -> None:
 
 def restart_interview() -> None:
     clear_session_state(st.session_state)
+    st.session_state.scroll_to_top_pending = True
+
+
+def scroll_to_top_if_pending() -> None:
+    if not st.session_state.get("scroll_to_top_pending", False):
+        return
+
+    st.html(
+        """
+        <script>
+        (() => {
+          const scrollToTop = () => {
+            window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+            for (const selector of [
+              '[data-testid="stAppViewContainer"]',
+              '[data-testid="stMain"]',
+              "section.main"
+            ]) {
+              document.querySelector(selector)?.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: "instant"
+              });
+            }
+          };
+          scrollToTop();
+          requestAnimationFrame(scrollToTop);
+          setTimeout(scrollToTop, 50);
+        })();
+        </script>
+        """,
+        unsafe_allow_javascript=True,
+    )
+    st.session_state.scroll_to_top_pending = False
 
 
 def render_interview_screen() -> None:
@@ -375,6 +409,7 @@ def render_interview_screen() -> None:
             st.session_state.phase = "report"
             st.session_state.report = None
             st.session_state.report_error = None
+            st.session_state.scroll_to_top_pending = True
             st.rerun()
 
         if language == "ar":
@@ -496,6 +531,8 @@ def main() -> None:
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+    if "scroll_to_top_pending" not in st.session_state:
+        st.session_state.scroll_to_top_pending = False
 
     if st.session_state.interview_messages is None:
         st.session_state.interview_messages = []
@@ -513,6 +550,7 @@ def main() -> None:
         render_interview_screen()
     else:
         render_report_screen()
+    scroll_to_top_if_pending()
 
 
 if __name__ == "__main__":
