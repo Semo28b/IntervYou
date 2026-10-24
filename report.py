@@ -88,8 +88,8 @@ def parse_report_response(response_text: str) -> InterviewReport:
     overall_reason = _required_text(data.get("overall_reason"), "overall_reason")
 
     raw_scores = data.get("question_scores")
-    if not isinstance(raw_scores, list) or len(raw_scores) != 5:
-        raise InvalidReportError("question_scores must contain exactly five entries.")
+    if not isinstance(raw_scores, list) or len(raw_scores) != 6:
+        raise InvalidReportError("question_scores must contain exactly six entries.")
 
     question_scores = []
     for item in raw_scores:
@@ -99,10 +99,10 @@ def parse_report_response(response_text: str) -> InterviewReport:
         if (
             isinstance(question_number, bool)
             or not isinstance(question_number, int)
-            or question_number not in range(1, 6)
+            or question_number not in range(1, 7)
         ):
             raise InvalidReportError(
-                "Each question score must have a question number from 1 to 5."
+                "Each question score must have a question number from 1 to 6."
             )
         question_scores.append(
             QuestionScore(
@@ -112,7 +112,7 @@ def parse_report_response(response_text: str) -> InterviewReport:
             )
         )
 
-    if {item.question_number for item in question_scores} != {1, 2, 3, 4, 5}:
+    if {item.question_number for item in question_scores} != {1, 2, 3, 4, 5, 6}:
         raise InvalidReportError(
             "Question scores must include each main question exactly once."
         )
@@ -185,7 +185,9 @@ def render_report(
 
         st.subheader("Question scores")
         for item in report.question_scores:
-            st.markdown(f"**Question {item.question_number}: {item.score:g} / 10**")
+            st.markdown(
+                f"**Question {item.question_number} of 6: {item.score:g} / 10**"
+            )
             st.write(item.reason)
 
         st.subheader("Strengths")
@@ -213,7 +215,7 @@ def _render_arabic_report(report: InterviewReport, job_title: str) -> None:
     )
     question_scores = "".join(
         "<li>"
-        f"<strong>السؤال {item.question_number}: {item.score:g} / 10</strong>"
+        f"<strong>السؤال {item.question_number} من 6: {item.score:g} / 10</strong>"
         f"<p>{escape(isolate_latin_runs(item.reason))}</p>"
         "</li>"
         for item in report.question_scores

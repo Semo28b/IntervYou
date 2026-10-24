@@ -435,6 +435,12 @@ def render_interview_screen() -> None:
     container_key = "arabic_interview" if language == "ar" else "interview_screen"
     with st.container(key=container_key):
         st.title("مقابلة عمل تجريبية" if language == "ar" else "AI Mock Interview")
+        question_label = (
+            f"السؤال {st.session_state.question_number} من 6"
+            if language == "ar"
+            else f"Question {st.session_state.question_number} of 6"
+        )
+        st.caption(question_label)
         for message in st.session_state.interview_messages:
             left, right = st.columns(2)
             if language == "ar":

@@ -5,17 +5,17 @@ status: approved
 
 # AI Mock Interview — Product Requirements
 
-A small English-only practice interview for a fresh graduate or job seeker (including co-op training): upload an English-language CV, enter a job title, sit a serious English-language HR-style chat, then see an honest English-language on-screen report.
+A small practice interview for a fresh graduate or job seeker (including co-op training): upload a CV, enter a job title, sit a serious HR-style chat in English (default) or Arabic, then see an honest on-screen report in the selected language.
 Source: `scope.md > Who It's For`, `scope.md > The Unique Kernel`, `scope.md > The Core Loop`.
 
 ## The Core Journey
 
 1. Open the app locally. See a calm start screen: centered card, upload a PDF CV, type a job title, **Start interview** (disabled until a CV is uploaded and the normalized title has at least two English or Arabic letters, is not made of repeated copies of one letter, and contains only letters, spaces, or `- / + & . , ( ) '`). Note: "Your CV and answers are sent to Google Gemini. Not saved by this app."
 2. A non-empty invalid job title shows a clear language-appropriate error under the field and keeps Start disabled. Normalize with NFKC, trim surrounding whitespace, and collapse extra spaces. Reject digits (including Arabic-Indic digits), other symbols, titles with fewer than two letters, or titles consisting of repetitions of one letter. An empty title stays disabled without an error. If the PDF text cannot be read, show a friendly error under the upload field. The interview does not begin in either case.
-3. If both are valid, move to a full-page chat. The interviewer greets the candidate for this job, says it will ask a few questions, then asks question 1 immediately.
-4. The candidate types and submits answers. If a submitted answer has fewer than three words or no English letter (A–Z), show a short message in the chat and do not send it to Gemini. Valid answers progress through questions that deepen: 1 is a light warm-up; 2–3 use specific CV details; 4–5 are deeper behavioral or challenging questions for this job. Vague or off-topic answers get at most two follow-ups, then the interviewer moves on. No scores or detailed feedback in the chat.
-5. After the last answer, the interviewer says a short polite goodbye (thanks them and says the interview is finished). The text box is disabled with the placeholder **The interview has ended**. A **View my report** button appears in the chat.
-6. The report screen shows name (or "Candidate"), job title, overall score with explanation, exactly five scores out of 10 (one per main question, considering that answer together with its follow-ups), strengths, areas to improve, CV–job fit (plain mismatch if needed), and three CV suggestions. Follow-up answers do not get separate scores.
+3. If both are valid, move to a full-page chat. The interviewer greets the candidate and asks question 1 about a specific CV detail. Show a “Question X of 6” counter.
+4. The candidate types and submits answers. If a submitted answer has fewer than three words or no English or Arabic letter, show a short message in the selected language and do not send it to Gemini. Main questions are ordered: 1 and 2 ask about different specific CV details; 3 and 4 present different realistic role-specific scenarios; 5 asks what the candidate would contribute to the company or team; 6 asks about career direction in 2–3 years. Never repeat an earlier topic. Vague or off-topic answers get at most two follow-ups, then the interviewer moves on. No scores or detailed feedback in the chat.
+5. After the candidate answers question 6 and any follow-ups, the interviewer says a short polite goodbye. The text box is disabled with the placeholder **The interview has ended**. A **View my report** button appears in the chat.
+6. The report screen shows name (or "Candidate"), job title, overall score with explanation, exactly six scores out of 10 (one per main question, considering that answer together with its follow-ups), strengths, areas to improve, CV–job fit (plain mismatch if needed), and three CV suggestions. Follow-up answers do not get separate scores.
 7. **Start a new interview** returns to the start screen. Nothing from the previous CV or chat is kept.
 Source: `scope.md > The Core Loop`, `scope.md > What "Working" Looks Like`.
 
@@ -33,7 +33,7 @@ A single centered card, top to bottom, lots of white space, no sidebar.
 6. Errors appear directly under the field that has the problem.
 
 ### Interview screen
-Full-page chatbot, no card around it, no header, no progress bar, no question counter.
+Full-page chatbot, no card around it, no progress bar. Show a small localized **Question X of 6** counter.
 1. Conversation fills the window in a comfortable centered reading column. Interviewer bubbles on the left, candidate on the right; soft rounded bubbles; scrolls as the chat grows.
 2. Text box + **Send** fixed at the bottom. Enter submits; Shift+Enter adds a new line. After submission, invalid answers show a short message and are not sent to Gemini.
 3. Typing indicator while the interviewer is thinking; **Send** disabled then so a second message cannot be sent.
@@ -70,12 +70,14 @@ Source: `scope.md > The Unique Kernel`, `scope.md > The POC Boundary`.
 - CVs are not saved. No extra name field on the start screen.
 
 ### Interviewer in character
-- Professional, serious, polite, respectful. English only.
+- Professional, serious, polite, respectful. Respond in the selected interview language.
 - Stay in the interviewer role until the interview is finished. No scores, praise, or coaching in the chat.
-- Welcome, then five main questions:
-  - **Q1** — light warm-up (e.g. about yourself and interest in this role).
-  - **Q2–Q3** — based on specific experiences or skills in this CV, not generic public questions.
-  - **Q4–Q5** — deeper behavioral or challenging questions matched to this job title and typical requirements (e.g. "Tell me about a time...").
+- Welcome, then six main questions, in both English and Arabic:
+  - **Q1–Q2** — each asks about a different specific detail from the CV.
+  - **Q3–Q4** — each asks about a different realistic, role-specific scenario or job problem.
+  - **Q5** — asks what the candidate would offer or contribute to the company or team, tailored to the role.
+  - **Q6** — asks where the candidate sees their career in 2–3 years or a similar career-direction question.
+- Never repeat a topic, CV detail, scenario, or competency already asked; account for prior main questions and follow-ups.
 - One question at a time. Tie later questions to earlier answers when relevant.
 - Follow-ups: at most two per main question, then move on.
   - If the answer is too general: ask for a specific example or what their role was.
@@ -89,7 +91,7 @@ Source: `scope.md > The Unique Kernel`, `scope.md > The POC Boundary`.
 ### Report
 Shown only after **View my report**. Tone: honest, specific, respectful; no generic praise. Practice estimate, not a prediction of a real interview.
 1. Overall score: "Based on your interview, your score is X out of 10," judged on clarity, specific examples, relevance to the job, and structure of answers, plus a short explanation why.
-2. Exactly five scores out of 10, one for each main question, with a short reason. Each score judges the main answer together with its follow-up answers; do not create separate follow-up scores. Off-topic or random answers get a low score with that reason stated.
+2. Exactly six scores out of 10, one for each main question, with a short reason. Each score judges the main answer together with its follow-up answers; do not create separate follow-up scores. Off-topic or random answers get a low score with that reason stated.
 3. Strengths — what they did well, with specific references to answers or CV.
 4. Areas to improve — weak points in answers, each with a clear specific explanation.
 5. CV–job fit — strengths and gaps. If the CV clearly does not match the job, say so plainly.
@@ -122,28 +124,28 @@ If an AI request fails, show a short friendly error in the chat with **Try again
 - Three screens: start card, full-page chat, on-screen report.
 - Friendly, light UI; serious interviewer — so it feels approachable without breaking the HR kernel.
 - Scores and detailed feedback only on the report, after View my report — stay in character during the chat.
-- Five questions with a deepening shape (warm-up, CV-based, behavioral).
+- Six questions in the fixed CV-detail, role-scenario, company-contribution, and career-direction sequence.
 - At most two follow-ups per question, including restating when off-topic.
-- Invalid submitted answers (fewer than 3 words or no English letter A–Z) show the short validation message and are not sent to Gemini.
+- Invalid submitted answers (fewer than 3 words or no English or Arabic letter) show the localized validation message and are not sent to Gemini.
 - No name field; missing name → "Candidate".
 - CVs not saved; no history.
-- English only for the interface, interview, answers, and report; Arabic is out of scope.
+- English is the default; Arabic is an optional interface, interview, answer-validation, and report language.
 - Local run is enough; deployment optional.
 
 ## What We're Building
 
-The one local flow above: start → five-question English interview with limited follow-ups → on-screen report → restart. Clear start errors, chat send rules, typing/disable while thinking, Try again on AI failure, and a report that can say a CV does not match the job. A `sample_cvs` folder is planned for later fake PDFs; the build must not wait on those files.
+The one local flow above: start → six-question interview in English or Arabic with limited follow-ups → on-screen report → restart. Clear start errors, chat send rules, typing/disable while thinking, Try again on AI failure, and a report that can say a CV does not match the job. A `sample_cvs` folder is planned for later fake PDFs; the build must not wait on those files.
 
 ## Deferred From the POC
 
 - **Putting the app on the internet** — optional; local demo is enough (`scope.md > Later`).
-- **Other languages** — English only for now (`scope.md > Later`).
+- **Other languages beyond English and Arabic** (`scope.md > Later`).
 - **Sample CV PDFs in `sample_cvs`** — add when ready; do not block the build (`scope.md > Later`).
 - **PDF download of the report** — the report is on screen only for now (`scope.md > Later`).
 
 ## Possible Later Enhancements
 
-- Arabic or mixed-language interview and UI.
+- Mixed-language interview and UI.
 - Deploy so others can open a link.
 - Drop prepared sample CVs into `sample_cvs` for testing and the demo video.
 - Download the report as a PDF.
@@ -156,7 +158,7 @@ The one local flow above: start → five-question English interview with limited
 - A large public question bank — questions come from this CV and this job.
 - Feedback or scores during the interview.
 - Inventing a candidate name or adding a name field.
-- Blue generic AI-app styling, decorative emojis, cluttered chrome, progress bars, or question counters.
+- Blue generic AI-app styling, decorative emojis, cluttered chrome, or progress bars.
 
 ## Open Questions
 
@@ -166,9 +168,10 @@ None. Accepted answers need at least 3 words and one English letter (A–Z); inv
 - After local PDF text extraction, an offline CV check runs before job-title validation or any Gemini request. It rejects text without contact details plus at least two CV sections, or structured work-history and education sections, with a localized message under the uploader. A rejected or unreadable PDF stays on the start screen and never starts an interview; the local check does not depend on Gemini availability.
 - The start card has additional responsive top/bottom spacing and a narrower centered width, without a fixed-height clipped layout.
 - The five main questions are explicitly sequenced: role-interest warm-up, two distinct CV-detail questions, company/team contribution, and deeper behavioral.
+- The interview now has exactly six ordered main questions, a localized “of 6” counter, and six per-question report scores; follow-up limits remain unchanged.
 - Gemini overloads are retried twice with short waits before a localized error appears; the current model is reused and failed actions remain retryable.
 
 ## Arabic mode
 - The start screen offers English (default) or Arabic without adding a company-name field.
-- In Arabic mode, the interviewer uses simple, professional Modern Standard Arabic for the five main questions, follow-ups, and closing; the report text and labels are Arabic. The report and chat bubbles are laid out right-to-left.
+- In Arabic mode, the interviewer uses simple, professional Modern Standard Arabic for the six main questions, follow-ups, and closing; the report text and labels are Arabic. The report and chat bubbles are laid out right-to-left.
 - Arabic CVs can be uploaded. Extracted text is Unicode-normalized before CV detection and Gemini requests. Arabic answers are accepted when they contain at least three words and an Arabic or English letter; the validation message is Arabic.

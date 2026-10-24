@@ -213,13 +213,17 @@ class InterviewProgressTests(unittest.TestCase):
         self.assertEqual(progress.question_number, 3)
         self.assertEqual(progress.follow_up_count, 0)
 
-    def test_follow_up_cap_and_final_question_are_enforced(self):
+    def test_six_question_limit_and_follow_up_cap_are_enforced(self):
         self.assertEqual(
             allowed_interviewer_actions(question_number=3, follow_up_count=2),
             ("question",),
         )
         self.assertEqual(
             allowed_interviewer_actions(question_number=5, follow_up_count=2),
+            ("question",),
+        )
+        self.assertEqual(
+            allowed_interviewer_actions(question_number=6, follow_up_count=2),
             ("finish",),
         )
         with self.assertRaises(InvalidInterviewTurnError):
@@ -233,25 +237,26 @@ class InterviewProgressTests(unittest.TestCase):
             record_interviewer_turn(
                 [],
                 InterviewTurn("question", "Another main question?"),
-                question_number=5,
+                question_number=6,
                 follow_up_count=0,
             )
 
-    def test_finish_is_only_allowed_after_question_five(self):
+    def test_finish_is_only_allowed_after_question_six(self):
         with self.assertRaises(InvalidInterviewTurnError):
             record_interviewer_turn(
                 [],
                 InterviewTurn("finish", "Thank you for your time."),
-                question_number=4,
+                question_number=5,
                 follow_up_count=0,
             )
         progress = record_interviewer_turn(
             [],
             InterviewTurn("finish", "Thank you for your time."),
-            question_number=5,
+            question_number=6,
             follow_up_count=0,
         )
         self.assertTrue(progress.finished)
+        self.assertEqual(progress.question_number, 6)
 
     def test_restart_clears_all_interview_session_state(self):
         state = {
@@ -402,7 +407,7 @@ class GeminiSetupTests(unittest.TestCase):
     def test_opening_request_uses_interview_model_and_cv_context(self, client_class):
         client = client_class.return_value
         client.models.generate_content.return_value.text = (
-            "Welcome. What interests you about this marketing role?"
+            "Welcome. Tell me about the community campaign on your CV."
         )
         settings = GeminiSettings(
             api_key="test-key",
@@ -416,12 +421,13 @@ class GeminiSetupTests(unittest.TestCase):
             "Marketing Specialist",
         )
 
-        self.assertIn("What interests you", message)
+        self.assertIn("community campaign", message)
         request = client.models.generate_content.call_args.kwargs
         self.assertEqual(request["model"], "interview-model")
         self.assertIn("CV mentions community campaigns.", request["contents"])
         self.assertIn("Marketing Specialist", request["contents"])
-        self.assertIn("why they are interested in this role", request["contents"])
+        self.assertIn("specific detail from the CV", request["contents"])
+        self.assertIn("Do not use a generic warm-up", request["contents"])
 
     @patch("gemini_service.genai.Client")
     def test_arabic_opening_requests_modern_standard_arabic(self, client_class):
@@ -501,7 +507,9 @@ class GeminiSetupTests(unittest.TestCase):
         self.assertEqual(client.models.generate_content.call_count, 2)
 
     @patch("gemini_service.genai.Client")
-    def test_interview_prompt_specifies_all_five_question_roles(self, client_class):
+    def test_interview_prompt_specifies_all_six_distinct_question_roles(
+        self, client_class
+    ):
         client = client_class.return_value
         client.models.generate_content.return_value.text = (
             '{"action": "question", "text": "What did you learn?"}'
@@ -518,9 +526,15 @@ class GeminiSetupTests(unittest.TestCase):
         )
 
         prompt = client.models.generate_content.call_args.kwargs["contents"]
-        self.assertIn("question 2 and question 3 each ask", prompt)
-        self.assertIn("question 4 asks what the candidate would contribute", prompt)
-        self.assertIn("question 5 is a deeper behavioral question", prompt)
+        self.assertIn("Current main question: 1 of 6", prompt)
+        self.assertIn("question 1 asks about one specific CV detail", prompt)
+        self.assertIn("question 2 asks about a different specific CV detail", prompt)
+        self.assertIn("question 3 presents a realistic role-specific scenario", prompt)
+        self.assertIn("question 4 presents a different role-specific scenario", prompt)
+        self.assertIn("question 5 asks what the candidate would", prompt)
+        self.assertIn("question 6 asks where the candidate sees their career", prompt)
+        self.assertIn("Keep all six main-question topics distinct", prompt)
+        self.assertIn("after question 6", prompt)
 
     @patch("gemini_service.genai.Client")
     def test_arabic_interview_turn_keeps_arabic_language_instruction(

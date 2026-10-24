@@ -20,7 +20,7 @@ ARABIC_JOB_TITLE_VALIDATION_MESSAGE = (
     "يمكنك استخدام - / + & . , ( ) ' دون أرقام أو رموز أخرى."
 )
 _JOB_TITLE_PUNCTUATION = frozenset("-/+&.,()'")
-MAX_MAIN_QUESTIONS = 5
+MAX_MAIN_QUESTIONS = 6
 MAX_FOLLOW_UPS = 2
 
 
@@ -104,7 +104,7 @@ def allowed_interviewer_actions(
     follow_up_count: int,
 ) -> tuple[str, ...]:
     if not 1 <= question_number <= MAX_MAIN_QUESTIONS:
-        raise ValueError("The main question number must be between 1 and 5.")
+        raise ValueError("The main question number must be between 1 and 6.")
     if not 0 <= follow_up_count <= MAX_FOLLOW_UPS:
         raise ValueError("The follow-up count must be between 0 and 2.")
 

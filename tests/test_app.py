@@ -22,7 +22,7 @@ def complete_report():
                         "score": 7,
                         "reason": "A clear example.",
                     }
-                    for number in range(1, 6)
+                    for number in range(1, 7)
                 ],
                 "strengths": ["Clear communication."],
                 "areas_to_improve": ["Add more detail."],
@@ -127,6 +127,7 @@ class ArabicInterfaceTests(unittest.TestCase):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
         app.session_state["phase"] = "interview"
         app.session_state["interview_language"] = "ar"
+        app.session_state["question_number"] = 6
         app.session_state["interview_messages"] = [
             {
                 "role": "assistant",
@@ -144,9 +145,24 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertTrue(any(item.label == "عرض تقريري" for item in app.button))
         self.assertFalse(any(item.label == "View my report" for item in app.button))
         self.assertEqual(app.chat_input[0].placeholder, "انتهت المقابلة")
+        self.assertTrue(any("السؤال 6 من 6" in item.value for item in app.caption))
         self.assertTrue(
             any("\u2068CES - C++.\u2069" in item.value for item in app.markdown)
         )
+
+    def test_english_chat_shows_question_counter_out_of_six(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
+        app.session_state["phase"] = "interview"
+        app.session_state["interview_language"] = "en"
+        app.session_state["question_number"] = 4
+        app.session_state["interview_messages"] = [
+            {"role": "assistant", "text": "Scenario question"}
+        ]
+
+        app.run(timeout=20)
+
+        self.assertFalse(app.exception)
+        self.assertTrue(any("Question 4 of 6" in item.value for item in app.caption))
 
     def test_report_shown_after_interview_renders_one_shot_scroll_to_top(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))

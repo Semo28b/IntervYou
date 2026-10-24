@@ -24,7 +24,7 @@ def valid_report_data():
                 "score": 6 + number / 10,
                 "reason": f"Question {number} included a relevant example.",
             }
-            for number in range(1, 6)
+            for number in range(1, 7)
         ],
         "strengths": ["Used a clear project example."],
         "areas_to_improve": ["Explain individual contributions in more detail."],
@@ -49,7 +49,7 @@ class ReportValidationTests(unittest.TestCase):
         self.assertEqual(report.overall_score, 7.5)
         self.assertEqual(
             [item.question_number for item in report.question_scores],
-            [1, 2, 3, 4, 5],
+            [1, 2, 3, 4, 5, 6],
         )
         self.assertEqual(len(report.cv_suggestions), 3)
 
@@ -57,12 +57,12 @@ class ReportValidationTests(unittest.TestCase):
         data = valid_report_data()
         data["question_scores"].pop()
 
-        with self.assertRaisesRegex(InvalidReportError, "exactly five"):
+        with self.assertRaisesRegex(InvalidReportError, "exactly six"):
             parse_report_response(json.dumps(data))
 
     def test_rejects_duplicate_question_numbers(self):
         data = valid_report_data()
-        data["question_scores"][4]["question_number"] = 4
+        data["question_scores"][5]["question_number"] = 5
 
         with self.assertRaisesRegex(InvalidReportError, "each main question"):
             parse_report_response(json.dumps(data))
@@ -103,6 +103,7 @@ class ReportPresentationTests(unittest.TestCase):
         self.assertIn("نقاط القوة ذات الصلة", markup)
         self.assertIn("اقتراحات لتحسين السيرة الذاتية", markup)
         self.assertIn("dir=\"rtl\"", markup)
+        self.assertIn("السؤال 6 من 6", markup)
         self.assertIn("<ul dir=\"rtl\"", markup)
         self.assertIn("<ol dir=\"rtl\"", markup)
         self.assertIn("background:#FFF1C4", markup)
@@ -157,6 +158,13 @@ class ReportGenerationTests(unittest.TestCase):
         self.assertEqual(report.candidate_name, "Candidate")
         request = client.models.generate_content.call_args.kwargs
         self.assertEqual(request["model"], "report-model")
+        score_schema = request["config"].response_schema.properties["question_scores"]
+        self.assertEqual(score_schema.min_items, 6)
+        self.assertEqual(score_schema.max_items, 6)
+        self.assertIn("exactly six scores, numbered 1 through 6", request["contents"])
+        self.assertIn("first CV detail", request["contents"])
+        self.assertIn("career direction", request["contents"])
+        self.assertEqual(len(report.question_scores), 6)
         self.assertEqual(
             request["config"].response_mime_type,
             "application/json",

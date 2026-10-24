@@ -120,7 +120,7 @@
       <span class="eyebrow">LOCAL STREAMLIT APP</span>
       <h1>AI Mock Interview</h1>
       <p class="lead">
-        Practice a five-question interview grounded in a CV and job title.
+        Practice a six-question interview grounded in a CV and job title.
         Python handles the interview rules; Google Gemini creates the interview
         turns and feedback report.
       </p>
@@ -147,7 +147,7 @@
         </li>
       </ol>
       <p class="note">
-        After the fifth question, the same app sends the transcript for a
+        After the sixth question, the same app sends the transcript for a
         report. <code>report.py</code> checks its shape and renders scores,
         feedback, and CV–job fit. Restart clears the temporary session.
       </p>
@@ -166,7 +166,7 @@
         <li>
           <a href="../interview.py"><code>interview.py</code></a> —
           <code>queue_candidate_answer()</code> checks the answer, while
-          <code>record_interviewer_turn()</code> enforces the five-question
+          <code>record_interviewer_turn()</code> enforces the six-question
           and follow-up limits. The matching rules are exercised in
           <a href="../tests/test_interview.py"><code>tests/test_interview.py</code></a>.
         </li>
