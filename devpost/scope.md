@@ -51,7 +51,7 @@ Someone opens the app locally and sees a simple start screen: upload CV (PDF), t
 - **Feedback during the interview** — breaks the “stay in role” kernel
 
 ## Post-build changes
-- Start rejects extracted PDF text without multiple CV-like section/contact signals before making any Gemini request. This local keyword check is offline and free, but may miss unusual CV formats or accept non-CV text with similar signals.
+- Start checks extracted PDF text locally before validating the job title or calling Gemini. The offline keyword heuristic requires contact details plus at least two CV sections, or structured work-history and education sections; it is free and unaffected by Gemini outages, but may miss unusual CV formats or accept similar documents.
 - The start card now has more top/bottom breathing room and a narrower centered width.
 - The five main questions now follow a fixed interview shape: role-interest warm-up, two CV-specific questions, a company/team contribution question, and a deeper behavioral question.
 

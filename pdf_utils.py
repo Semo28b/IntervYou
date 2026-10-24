@@ -34,6 +34,12 @@ _CONTACT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _PHONE_PATTERN = re.compile(r"\+?\d[\d \t().-]{8,}\d")
+_STRUCTURED_WORK_HISTORY_PATTERN = re.compile(
+    r"\b(?:work|professional)\s+experience\b"
+    r"|\bemployment\s+history\b"
+    r"|الخبرة\s+(?:العملية|المهنية)|الخبرات العملية|التاريخ الوظيفي",
+    re.IGNORECASE,
+)
 
 
 def _normalize_text(text: str) -> str:
@@ -61,10 +67,13 @@ def looks_like_cv(text: str) -> bool:
         len(re.sub(r"\D", "", number)) >= 10
         for number in _PHONE_PATTERN.findall(normalized_text)
     )
-    has_work_history = (
-        _CV_SECTION_PATTERNS[0].search(normalized_text) is not None
+    has_structured_work_history = (
+        _STRUCTURED_WORK_HISTORY_PATTERN.search(normalized_text) is not None
     )
-    return section_count >= 2 or (contact_found and has_work_history)
+    has_education = _CV_SECTION_PATTERNS[1].search(normalized_text) is not None
+    return (contact_found and section_count >= 2) or (
+        has_structured_work_history and has_education
+    )
 
 
 def extract_pdf_text(pdf_bytes: bytes) -> str:

@@ -163,7 +163,7 @@ The one local flow above: start → five-question English interview with limited
 None. Accepted answers need at least 3 words and one English letter (A–Z); invalid submissions show the validation message and are not sent to Gemini.
 
 ## Post-build changes
-- After local PDF text extraction, a local CV-keyword check rejects text without multiple CV-like section/contact signals with: “This doesn't look like a CV. Please upload your CV as a PDF.” The app stays on the start screen and does not call Gemini.
+- After local PDF text extraction, an offline CV check runs before job-title validation or any Gemini request. It rejects text without contact details plus at least two CV sections, or structured work-history and education sections, with a localized message under the uploader. A rejected or unreadable PDF stays on the start screen and never starts an interview; the local check does not depend on Gemini availability.
 - The start card has additional responsive top/bottom spacing and a narrower centered width, without a fixed-height clipped layout.
 - The five main questions are explicitly sequenced: role-interest warm-up, two distinct CV-detail questions, company/team contribution, and deeper behavioral.
 

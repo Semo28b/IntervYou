@@ -4,7 +4,7 @@ from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
-from app import localize_interview_error
+from app import localize_cv_error, localize_interview_error
 from report import parse_report_response
 
 
@@ -41,6 +41,30 @@ def complete_report():
 
 
 class ArabicInterfaceTests(unittest.TestCase):
+    def test_arabic_start_reports_invalid_title_after_cv_upload(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
+        app.run(timeout=20)
+
+        sample_dir = Path(__file__).resolve().parents[1] / "sample_cvs"
+        sample_pdf = next(sample_dir.glob("*.pdf"))
+        app.selectbox[0].set_value("العربية")
+        app.file_uploader[0].set_value(
+            (sample_pdf.name, sample_pdf.read_bytes(), "application/pdf")
+        )
+        app.text_input[0].set_value("M")
+        app.run(timeout=20)
+
+        self.assertFalse(app.exception)
+        start_button = next(
+            button for button in app.button if button.label == "ابدأ المقابلة"
+        )
+        self.assertFalse(start_button.disabled)
+        start_button.click().run(timeout=20)
+
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["phase"], "start")
+        self.assertTrue(any("مسمى وظيفي" in item.value for item in app.error))
+
     def test_arabic_chat_uses_localized_controls_and_finished_placeholder(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
         app.session_state["phase"] = "interview"
@@ -135,6 +159,12 @@ class ArabicInterfaceTests(unittest.TestCase):
 
         self.assertIn("خدمة Gemini", localize_interview_error(message, "ar"))
         self.assertEqual(localize_interview_error(message, "en"), message)
+
+    def test_non_cv_errors_are_localized_without_gemini(self):
+        message = "This doesn't look like a CV. Please upload your CV as a PDF."
+
+        self.assertEqual(localize_cv_error(message, "en"), message)
+        self.assertIn("لا يبدو سيرة ذاتية", localize_cv_error(message, "ar"))
 
 
 if __name__ == "__main__":

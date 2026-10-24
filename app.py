@@ -74,6 +74,14 @@ def localize_interview_error(message: str, language: str) -> str:
     return "حدث خطأ أثناء معالجة المقابلة. يرجى المحاولة مجدداً."
 
 
+def localize_cv_error(message: str, language: str) -> str:
+    if language != "ar":
+        return message
+    if "doesn't look like a CV" in message:
+        return "هذا الملف لا يبدو سيرة ذاتية. يرجى رفع سيرتك الذاتية بصيغة PDF."
+    return "تعذر قراءة النص في هذا الملف. يرجى رفع سيرة ذاتية نصية بصيغة PDF."
+
+
 def inject_theme_styles() -> None:
     st.markdown(
         """
@@ -173,14 +181,21 @@ def render_start_screen() -> None:
             '<div class="brand-pill">AI MOCK INTERVIEW</div>',
             unsafe_allow_html=True,
         )
-        st.title("Ready to practice your next interview?")
-        st.write(
-            "Upload your CV, tell us the job you're aiming for, and we'll run "
-            "a realistic interview, then show you how you did."
+        language = (
+            "ar" if st.session_state.get("language_choice") == "العربية" else "en"
         )
+        if language == "ar":
+            st.title("هل أنت مستعد لمقابلتك القادمة؟")
+            st.write("ارفع سيرتك الذاتية وحدد الوظيفة لتبدأ مقابلة واقعية.")
+        else:
+            st.title("Ready to practice your next interview?")
+            st.write(
+                "Upload your CV, tell us the job you're aiming for, and we'll run "
+                "a realistic interview, then show you how you did."
+            )
 
         language_choice = st.selectbox(
-            "Interview language",
+            "لغة المقابلة" if language == "ar" else "Interview language",
             ("English", "العربية"),
             key="language_choice",
             on_change=clear_start_error,
@@ -188,19 +203,27 @@ def render_start_screen() -> None:
         language = "ar" if language_choice == "العربية" else "en"
 
         uploaded_file = st.file_uploader(
-            "Upload your CV (PDF)",
+            "ارفع سيرتك الذاتية (PDF)"
+            if language == "ar"
+            else "Upload your CV (PDF)",
             type=["pdf"],
             key="cv_upload",
             on_change=clear_start_error,
         )
         if st.session_state.start_error_field == "cv":
-            st.error(st.session_state.start_error_message)
+            st.error(
+                localize_cv_error(st.session_state.start_error_message, language)
+            )
         if uploaded_file is not None:
-            st.write(f"{uploaded_file.name} — PDF uploaded")
+            st.write(
+                f"{uploaded_file.name} — تم رفع ملف PDF"
+                if language == "ar"
+                else f"{uploaded_file.name} — PDF uploaded"
+            )
 
         job_title = st.text_input(
-            "Job title you're applying for",
-            placeholder="Marketing Specialist",
+            "المسمى الوظيفي" if language == "ar" else "Job title you're applying for",
+            placeholder="مهندس برمجيات" if language == "ar" else "Marketing Specialist",
             key="job_title_input",
             on_change=normalize_job_title_input,
         )
@@ -209,25 +232,22 @@ def render_start_screen() -> None:
             st.error(st.session_state.start_error_message)
         elif job_title and not validate_job_title(job_title):
             st.error(title_error)
-
-        st.caption(
-            "Your CV and answers are sent to Google Gemini. Not saved by this app."
-        )
-        start_clicked = st.button(
-            "Start interview",
-            type="primary",
-            disabled=uploaded_file is None or not validate_job_title(job_title),
-        )
-
         if st.session_state.start_error_field == "setup":
             st.error(st.session_state.start_error_message)
 
+        st.caption(
+            "ستُرسل سيرتك الذاتية وإجاباتك إلى Google Gemini. لا يحفظها التطبيق."
+            if language == "ar"
+            else "Your CV and answers are sent to Google Gemini. Not saved by this app."
+        )
+        start_clicked = st.button(
+            "ابدأ المقابلة" if language == "ar" else "Start interview",
+            type="primary",
+            disabled=uploaded_file is None,
+        )
+
         if not start_clicked:
             return
-
-        if not validate_job_title(job_title):
-            set_start_error("job_title", title_error)
-            st.rerun()
 
         try:
             cv_text = extract_pdf_text(uploaded_file.getvalue())
@@ -245,9 +265,18 @@ def render_start_screen() -> None:
             )
             st.rerun()
 
+        if not validate_job_title(job_title):
+            set_start_error("job_title", title_error)
+            st.rerun()
+
         try:
             settings = load_gemini_settings()
-            with st.spinner("The interviewer is preparing your first question..."):
+            preparing_message = (
+                "يُعد المحاور سؤاله الأول..."
+                if language == "ar"
+                else "The interviewer is preparing your first question..."
+            )
+            with st.spinner(preparing_message):
                 opening_message = generate_opening_message(
                     settings,
                     cv_text,
@@ -255,10 +284,16 @@ def render_start_screen() -> None:
                     language=language,
                 )
         except GeminiConfigurationError as exc:
-            set_start_error("setup", str(exc))
+            set_start_error(
+                "setup",
+                localize_interview_error(str(exc), language),
+            )
             st.rerun()
         except GeminiServiceError as exc:
-            set_start_error("setup", str(exc))
+            set_start_error(
+                "setup",
+                localize_interview_error(str(exc), language),
+            )
             st.rerun()
 
         st.session_state.cv_text = cv_text

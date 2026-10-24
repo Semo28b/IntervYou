@@ -322,9 +322,28 @@ class PdfExtractionTests(unittest.TestCase):
                 "Registration form\nName: Jordan Lee\n"
                 "Email: jordan@example.com\nEducation level: undergraduate"
             ),
+            (
+                "Project Guide\nExperience overview\nEducation plan\n"
+                "Skills matrix\nProject instructions and drawing references"
+            ),
+            (
+                "Site plans document\nProject objectives\nEducation program\n"
+                "Experience requirements\nSkills matrix\nRevision history"
+            ),
         ):
             with self.subTest(text=text):
                 self.assertFalse(looks_like_cv(text))
+
+    def test_cv_check_accepts_bundled_sample_cvs(self):
+        from pathlib import Path
+
+        sample_dir = Path(__file__).resolve().parents[1] / "sample_cvs"
+        sample_pdfs = list(sample_dir.glob("*.pdf"))
+        self.assertTrue(sample_pdfs)
+        for sample_pdf in sample_pdfs:
+            with self.subTest(filename=sample_pdf.name):
+                text = extract_pdf_text(sample_pdf.read_bytes())
+                self.assertTrue(looks_like_cv(text))
 
     @patch("pdf_utils.PdfReader")
     def test_extracts_and_joins_text_from_pages(self, pdf_reader):
