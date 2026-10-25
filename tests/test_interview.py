@@ -28,7 +28,12 @@ from interview import (
     validate_answer,
     validate_job_title,
 )
-from pdf_utils import UnreadablePDFError, extract_pdf_text, looks_like_cv
+from pdf_utils import (
+    UnreadablePDFError,
+    extract_pdf_text,
+    extract_pdf_text_with_page_count,
+    looks_like_cv,
+)
 
 
 class InterviewInputTests(unittest.TestCase):
@@ -306,18 +311,77 @@ class PdfExtractionTests(unittest.TestCase):
     def test_cv_check_accepts_arabic_section_headings(self):
         self.assertTrue(
             looks_like_cv(
+                "مريم أحمد\nmariam@example.com\n"
                 "الخبرة العملية\nمهندسة برمجيات\n"
-                "التعليم\nبكالوريوس علوم الحاسوب"
+                "التعليم\nبكالوريوس علوم الحاسوب\n"
+                "المهارات\nإدارة المشاريع وتحليل البيانات"
             )
         )
 
     def test_cv_check_normalizes_arabic_presentation_forms(self):
         self.assertTrue(
             looks_like_cv(
+                "mariam@example.com\n"
                 "اﻟﺧﺑرة اﻟﻌﻣﻠﯾﺔ\nمهندسة برمجيات\n"
-                "اﻟﺗﻌﻟﯾم\nبكالوريوس علوم الحاسوب"
+                "اﻟﺗﻌﻟﯾم\nبكالوريوس علوم الحاسوب\n"
+                "اﻟﻣﮭﺎرات\nإدارة المشاريع"
             )
         )
+
+    def test_cv_check_requires_multiple_distinct_cv_signals(self):
+        self.assertFalse(
+            looks_like_cv(
+                "Email: Jordan@example.com\nEducation history\n"
+                "Undergraduate degree and experience using office tools."
+            )
+        )
+
+    def test_cv_check_rejects_handbook_and_lecture_notes_offline(self):
+        handbook = (
+            "Academic Advisor Handbook\nTable of Contents\n"
+            "Chapter 1 Introduction\nChapter 2 Advising\n"
+            "Chapter 3 Student Support\nChapter 4 Records\n"
+            "Figure 1: Advising workflow\nTable 1: Student requirements\n"
+            "Figure 2: Term timeline\n"
+            "Email: editor@university.edu\nEducation\nExperience\nSkills\n"
+            "2020-2024\nCertifications\n"
+        )
+        lecture_notes = (
+            "Lecture Notes: Introduction to Biology\n"
+            "Cell structures, membranes, and energy production.\n"
+            "The course covers learning objectives and weekly readings."
+        )
+
+        self.assertFalse(looks_like_cv(handbook, page_count=25))
+        self.assertFalse(looks_like_cv(handbook, page_count=4))
+        self.assertFalse(looks_like_cv(lecture_notes, page_count=1))
+
+    def test_cv_check_rejects_page_and_extracted_text_limits(self):
+        resume = (
+            "Jordan Lee\njordan@example.com\nEducation\n"
+            "Work Experience\nSkills\n2020-2024"
+        )
+
+        self.assertTrue(looks_like_cv(resume, page_count=5))
+        self.assertFalse(looks_like_cv(resume, page_count=6))
+        self.assertFalse(looks_like_cv(resume + (" extra" * 5000), page_count=1))
+
+    def test_cv_check_accepts_english_and_arabic_resume_examples_offline(self):
+        english_cv = (
+            "Jordan Lee\njordan@example.com\n"
+            "Education\nBSc Computer Science, 2018-2022\n"
+            "Work Experience\nSoftware Engineer, 2022-present\n"
+            "Skills\nPython, testing, and cloud platforms"
+        )
+        arabic_cv = (
+            "مريم أحمد\nmariam@example.com\n"
+            "التعليم\nبكالوريوس علوم الحاسوب 2018-2022\n"
+            "الخبرة المهنية\nمهندسة برمجيات 2022-present\n"
+            "المهارات\nبايثون واختبار البرمجيات"
+        )
+
+        self.assertTrue(looks_like_cv(english_cv, page_count=1))
+        self.assertTrue(looks_like_cv(arabic_cv, page_count=2))
 
     def test_cv_check_rejects_non_cv_documents_offline(self):
         for text in (
@@ -347,8 +411,11 @@ class PdfExtractionTests(unittest.TestCase):
         self.assertTrue(sample_pdfs)
         for sample_pdf in sample_pdfs:
             with self.subTest(filename=sample_pdf.name):
-                text = extract_pdf_text(sample_pdf.read_bytes())
-                self.assertTrue(looks_like_cv(text))
+                text, page_count = extract_pdf_text_with_page_count(
+                    sample_pdf.read_bytes()
+                )
+                self.assertLessEqual(page_count, 5)
+                self.assertTrue(looks_like_cv(text, page_count))
 
     @patch("pdf_utils.PdfReader")
     def test_extracts_and_joins_text_from_pages(self, pdf_reader):
@@ -361,6 +428,16 @@ class PdfExtractionTests(unittest.TestCase):
         text = extract_pdf_text(b"test pdf bytes")
 
         self.assertEqual(text, "Candidate CV\nExperience")
+
+    @patch("pdf_utils.PdfReader")
+    def test_extracts_text_and_page_count(self, pdf_reader):
+        page = Mock()
+        page.extract_text.return_value = "Candidate CV"
+        pdf_reader.return_value.pages = [page, page]
+
+        result = extract_pdf_text_with_page_count(b"test pdf bytes")
+
+        self.assertEqual(result, ("Candidate CV\nCandidate CV", 2))
 
     @patch("pdf_utils.PdfReader")
     def test_normalizes_arabic_presentation_forms_from_pdf(self, pdf_reader):

@@ -19,7 +19,11 @@ from interview import (
     record_interviewer_turn,
     validate_job_title,
 )
-from pdf_utils import UnreadablePDFError, extract_pdf_text, looks_like_cv
+from pdf_utils import (
+    UnreadablePDFError,
+    extract_pdf_text_with_page_count,
+    looks_like_cv,
+)
 from report import render_report
 from rtl import isolate_latin_runs
 
@@ -302,7 +306,9 @@ def render_start_screen() -> None:
             return
 
         try:
-            cv_text = extract_pdf_text(uploaded_file.getvalue())
+            cv_text, page_count = extract_pdf_text_with_page_count(
+                uploaded_file.getvalue()
+            )
         except UnreadablePDFError:
             set_start_error(
                 "cv",
@@ -310,7 +316,7 @@ def render_start_screen() -> None:
             )
             st.rerun()
 
-        if not looks_like_cv(cv_text):
+        if not looks_like_cv(cv_text, page_count):
             set_start_error(
                 "cv",
                 "This doesn't look like a CV. Please upload your CV as a PDF.",
