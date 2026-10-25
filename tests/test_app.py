@@ -273,6 +273,16 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertEqual(app.chat_input[0].placeholder, "Type your answer")
         self.assertEqual(len(app.html), 1)
         self.assertIn("scrollIntoView", app.html[0].value)
+        first_update_id = app.session_state["chat_scroll_update_id"]
+        first_focus_script = app.html[0].value
+
+        app.session_state["chat_scroll_pending"] = True
+        app.run(timeout=20)
+
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["chat_scroll_update_id"], first_update_id + 1)
+        self.assertNotEqual(app.html[0].value, first_focus_script)
+        self.assertIn("focusChatInput, 500", app.html[0].value)
 
     def test_english_chat_input_queues_reply(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))

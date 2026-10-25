@@ -483,10 +483,14 @@ def scroll_to_latest_message_if_pending() -> None:
     if not st.session_state.get("chat_scroll_pending", False):
         return
 
+    st.session_state.chat_scroll_update_id = (
+        st.session_state.get("chat_scroll_update_id", 0) + 1
+    )
     st.html(
         """
         <script>
         (() => {
+          const updateId = CHAT_SCROLL_UPDATE_ID;
           const scrollToLatestMessage = () => {
             const messages = document.querySelectorAll(
               '[data-testid="stChatMessage"]'
@@ -513,9 +517,14 @@ def scroll_to_latest_message_if_pending() -> None:
           };
           requestAnimationFrame(updateChatView);
           setTimeout(updateChatView, 50);
+          setTimeout(updateChatView, 250);
+          setTimeout(focusChatInput, 500);
         })();
         </script>
-        """,
+        """.replace(
+            "CHAT_SCROLL_UPDATE_ID",
+            str(st.session_state.chat_scroll_update_id),
+        ),
         unsafe_allow_javascript=True,
     )
     st.session_state.chat_scroll_pending = False
@@ -720,6 +729,7 @@ def main() -> None:
         "report": None,
         "report_error": None,
         "chat_scroll_pending": False,
+        "chat_scroll_update_id": 0,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
