@@ -130,9 +130,12 @@ def inject_theme_styles() -> None:
         }
         .st-key-arabic_start_card [role="radiogroup"] {
             display: flex;
-            width: 100% !important;
+            width: max-content !important;
+            max-width: 100%;
+            margin-left: auto !important;
+            margin-right: 0 !important;
+            align-self: flex-end;
             direction: rtl;
-            justify-content: flex-end;
         }
         .st-key-arabic_start_card [role="radiogroup"] button[aria-checked="true"],
         .st-key-start_card [role="radiogroup"] button[aria-checked="true"] {

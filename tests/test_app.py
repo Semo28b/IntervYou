@@ -87,9 +87,13 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertIn(
             ".st-key-arabic_start_card [role=\"radiogroup\"] {\n"
             "    display: flex;\n"
-            "    width: 100% !important;\n"
+            "    width: max-content !important;\n"
+            "    max-width: 100%;\n"
+            "    margin-left: auto !important;\n"
+            "    margin-right: 0 !important;\n"
+            "    align-self: flex-end;\n"
             "    direction: rtl;\n"
-            "    justify-content: flex-end;",
+            "}",
             styles,
         )
         self.assertIn(
