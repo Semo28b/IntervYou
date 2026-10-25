@@ -103,19 +103,22 @@ def inject_theme_styles() -> None:
             max-width: 46rem;
             margin-inline: auto;
         }
-        .st-key-arabic_start_card {
-            direction: rtl;
-            text-align: right;
-        }
         .st-key-arabic_start_card [data-testid="stWidgetLabel"],
         .st-key-arabic_start_card [data-testid="stWidgetLabel"] p {
             direction: rtl;
             text-align: right;
         }
-        .st-key-arabic_start_card [data-testid="stSelectbox"],
-        .st-key-arabic_start_card [data-testid="stSelectbox"] > div {
+        .st-key-arabic_welcome {
+            width: 100%;
             direction: rtl;
             text-align: right;
+        }
+        .st-key-arabic_welcome [data-testid="stMarkdownContainer"] {
+            width: 100%;
+            text-align: right;
+        }
+        .st-key-arabic_start_card [data-testid="stSegmentedControl"] {
+            direction: rtl;
         }
         .st-key-arabic_start_card input {
             direction: rtl;
@@ -217,12 +220,16 @@ def render_start_screen() -> None:
             unsafe_allow_html=True,
         )
         if language == "ar":
-            st.title(isolate_latin_runs("هل أنت مستعد لمقابلتك القادمة؟"))
-            st.write(
-                isolate_latin_runs(
-                    "ارفع سيرتك الذاتية وحدد الوظيفة لتبدأ مقابلة واقعية."
+            with st.container(key="arabic_welcome"):
+                st.markdown(
+                    """
+                    <div style="direction: rtl; text-align: right;">
+                        <h1>هل أنت مستعد لمقابلتك القادمة؟</h1>
+                        <p>ارفع سيرتك الذاتية وحدد الوظيفة لتبدأ مقابلة واقعية.</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
-            )
         else:
             st.title("Ready to practice your next interview?")
             st.write(
