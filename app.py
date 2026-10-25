@@ -496,8 +496,20 @@ def scroll_to_latest_message_if_pending() -> None:
               });
             }
           };
-          requestAnimationFrame(scrollToLatestMessage);
-          setTimeout(scrollToLatestMessage, 50);
+          const focusChatInput = () => {
+            const input = document.querySelector(
+              '[data-testid="stChatInput"] textarea'
+            );
+            if (input && !input.disabled) {
+              input.focus({ preventScroll: true });
+            }
+          };
+          const updateChatView = () => {
+            scrollToLatestMessage();
+            focusChatInput();
+          };
+          requestAnimationFrame(updateChatView);
+          setTimeout(updateChatView, 50);
         })();
         </script>
         """,

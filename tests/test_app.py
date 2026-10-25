@@ -231,6 +231,7 @@ class ArabicInterfaceTests(unittest.TestCase):
         )
         self.assertEqual(len(app.html), 1)
         self.assertIn("scrollIntoView", app.html[0].value)
+        self.assertIn("focus({ preventScroll: true })", app.html[0].value)
         self.assertFalse(app.session_state["chat_scroll_pending"])
 
     def test_arabic_chat_input_queues_reply_from_main_area(self):
