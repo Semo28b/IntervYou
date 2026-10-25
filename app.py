@@ -125,6 +125,9 @@ def inject_theme_styles() -> None:
         .st-key-arabic_start_card .st-key-language_choice > div {
             width: 100%;
         }
+        .st-key-arabic_start_card .stButtonGroup {
+            display: block;
+        }
         .st-key-arabic_start_card [role="radiogroup"] {
             display: flex;
             width: 100% !important;
