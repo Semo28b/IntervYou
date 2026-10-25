@@ -1,10 +1,12 @@
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
 from app import localize_cv_error, localize_interview_error
+from gemini_service import GeminiServiceError
 from report import parse_report_response
 from rtl import isolate_latin_runs
 
@@ -143,6 +145,7 @@ class ArabicInterfaceTests(unittest.TestCase):
             }
         ]
         app.session_state["interview_finished"] = True
+        app.session_state["chat_scroll_pending"] = True
 
         app.run(timeout=20)
 
@@ -157,6 +160,32 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertTrue(
             any("\u2068CES - C++.\u2069" in item.value for item in app.markdown)
         )
+        self.assertEqual(len(app.html), 1)
+        self.assertIn("scrollIntoView", app.html[0].value)
+        self.assertFalse(app.session_state["chat_scroll_pending"])
+
+    def test_arabic_chat_input_queues_reply_from_main_area(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
+        app.session_state["phase"] = "interview"
+        app.session_state["interview_language"] = "ar"
+        app.session_state["interview_messages"] = [
+            {"role": "assistant", "text": "حدثني عن مشروع عملت عليه."}
+        ]
+        app.session_state["cv_text"] = "Candidate CV"
+        app.session_state["job_title"] = "مهندس برمجيات"
+        answer = "قدت فريقاً من خمسة أشخاص لإنجاز المشروع في موعده."
+
+        app.run(timeout=20)
+        with patch(
+            "gemini_service.generate_interview_turn",
+            side_effect=GeminiServiceError("Gemini is temporarily unavailable."),
+        ):
+            app.chat_input[0].set_value(answer).run(timeout=20)
+
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["pending_answer"], answer)
+        self.assertEqual(app.session_state["interview_messages"][-1]["role"], "user")
+        self.assertEqual(app.session_state["interview_messages"][-1]["text"], answer)
 
     def test_english_chat_shows_question_counter_out_of_six(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))

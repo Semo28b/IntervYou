@@ -355,6 +355,7 @@ def render_start_screen() -> None:
         st.session_state.answer_error = None
         st.session_state.interview_finished = False
         st.session_state.phase = "interview"
+        st.session_state.chat_scroll_pending = True
         clear_start_error()
         st.rerun()
 
@@ -390,6 +391,7 @@ def process_pending_answer() -> None:
     st.session_state.interview_finished = progress.finished
     st.session_state.pending_answer = None
     st.session_state.interview_error = None
+    st.session_state.chat_scroll_pending = True
 
 
 def restart_interview() -> None:
@@ -430,9 +432,54 @@ def scroll_to_top_if_pending() -> None:
     st.session_state.scroll_to_top_pending = False
 
 
+def scroll_to_latest_message_if_pending() -> None:
+    if not st.session_state.get("chat_scroll_pending", False):
+        return
+
+    st.html(
+        """
+        <script>
+        (() => {
+          const scrollToLatestMessage = () => {
+            const messages = document.querySelectorAll(
+              '[data-testid="stChatMessage"]'
+            );
+            const latestMessage = messages[messages.length - 1];
+            if (latestMessage) {
+              latestMessage.scrollIntoView({
+                block: "end",
+                behavior: "smooth"
+              });
+            }
+          };
+          requestAnimationFrame(scrollToLatestMessage);
+          setTimeout(scrollToLatestMessage, 50);
+        })();
+        </script>
+        """,
+        unsafe_allow_javascript=True,
+    )
+    st.session_state.chat_scroll_pending = False
+
+
 def render_interview_screen() -> None:
     language = st.session_state.get("interview_language", "en")
     container_key = "arabic_interview" if language == "ar" else "interview_screen"
+    answer = None
+    if language == "ar":
+        placeholder = (
+            "انتهت المقابلة"
+            if st.session_state.interview_finished
+            else "اكتب إجابتك"
+        )
+        answer = st.chat_input(
+            placeholder=placeholder,
+            disabled=(
+                st.session_state.interview_finished
+                or st.session_state.pending_answer is not None
+            ),
+        )
+
     with st.container(key=container_key):
         st.title("مقابلة عمل تجريبية" if language == "ar" else "AI Mock Interview")
         question_label = (
@@ -507,40 +554,38 @@ def render_interview_screen() -> None:
             st.session_state.scroll_to_top_pending = True
             st.rerun()
 
-        if language == "ar":
-            placeholder = (
-                "انتهت المقابلة"
-                if st.session_state.interview_finished
-                else "اكتب إجابتك"
-            )
-        else:
+        if language != "ar":
             placeholder = (
                 "The interview has ended"
                 if st.session_state.interview_finished
                 else "Type your answer"
             )
-        answer = st.chat_input(
-            placeholder=placeholder,
-            disabled=(
-                st.session_state.interview_finished
-                or st.session_state.pending_answer is not None
-            ),
-        )
-        if answer is None:
-            return
 
-        if not queue_candidate_answer(
-            answer,
-            st.session_state.interview_messages,
-            language,
-        ):
-            st.session_state.answer_error = answer_validation_message(language)
-            st.rerun()
+            answer = st.chat_input(
+                placeholder=placeholder,
+                disabled=(
+                    st.session_state.interview_finished
+                    or st.session_state.pending_answer is not None
+                ),
+            )
 
-        st.session_state.answer_error = None
-        st.session_state.pending_answer = answer
-        st.session_state.interview_error = None
+    if answer is None:
+        scroll_to_latest_message_if_pending()
+        return
+
+    if not queue_candidate_answer(
+        answer,
+        st.session_state.interview_messages,
+        language,
+    ):
+        st.session_state.answer_error = answer_validation_message(language)
         st.rerun()
+
+    st.session_state.answer_error = None
+    st.session_state.chat_scroll_pending = True
+    st.session_state.pending_answer = answer
+    st.session_state.interview_error = None
+    st.rerun()
 
 
 def render_report_screen() -> None:
@@ -625,6 +670,7 @@ def main() -> None:
         "interview_finished": False,
         "report": None,
         "report_error": None,
+        "chat_scroll_pending": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
