@@ -501,7 +501,7 @@ def scroll_to_latest_message_if_pending() -> None:
             const latestMessage = messages[messages.length - 1];
             if (latestMessage) {
               latestMessage.scrollIntoView({
-                block: "end",
+                block: "start",
                 behavior: "smooth"
               });
             }

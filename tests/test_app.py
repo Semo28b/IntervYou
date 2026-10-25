@@ -234,6 +234,7 @@ class ArabicInterfaceTests(unittest.TestCase):
         )
         self.assertEqual(len(app.html), 1)
         self.assertIn("scrollIntoView", app.html[0].value)
+        self.assertIn('block: "start"', app.html[0].value)
         self.assertIn("focus({ preventScroll: true })", app.html[0].value)
         self.assertFalse(app.session_state["chat_scroll_pending"])
 
@@ -277,6 +278,7 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertEqual(app.chat_input[0].placeholder, "Type your answer")
         self.assertEqual(len(app.html), 1)
         self.assertIn("scrollIntoView", app.html[0].value)
+        self.assertIn('block: "start"', app.html[0].value)
         first_update_id = app.session_state["chat_scroll_update_id"]
         first_focus_script = app.html[0].value
 
