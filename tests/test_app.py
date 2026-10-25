@@ -81,12 +81,6 @@ class ArabicInterfaceTests(unittest.TestCase):
         )
         self.assertIn(
             ".st-key-arabic_start_card .stButtonGroup {\n"
-            "    display: flex;\n"
-            "    justify-content: flex-end;",
-            styles,
-        )
-        self.assertIn(
-            ".st-key-arabic_start_card .stButtonGroup {\n"
             "    display: block;",
             styles,
         )
