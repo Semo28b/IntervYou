@@ -51,8 +51,11 @@ class ArabicInterfaceTests(unittest.TestCase):
         app.run(timeout=20)
 
         self.assertFalse(app.exception)
-        self.assertTrue(any("مقابلتك القادمة" in item.value for item in app.title))
-        self.assertEqual(app.selectbox[0].label, "لغة المقابلة")
+        self.assertTrue(
+            any("مقابلتك القادمة" in item.value for item in app.markdown)
+        )
+        self.assertEqual(app.segmented_control[0].label, "لغة المقابلة")
+        self.assertEqual(app.segmented_control[0].options, ["English", "العربية"])
         self.assertEqual(
             app.file_uploader[0].label,
             "ارفع سيرتك الذاتية \u2068(PDF)\u2069",
@@ -64,7 +67,15 @@ class ArabicInterfaceTests(unittest.TestCase):
 
         styles = app.markdown[0].value
         self.assertIn(
-            ".st-key-arabic_start_card {\n    direction: rtl;\n    text-align: right;",
+            ".st-key-arabic_start_card [data-testid=\"stSegmentedControl\"] {\n"
+            "    direction: rtl;",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-arabic_welcome {\n"
+            "    width: 100%;\n"
+            "    direction: rtl;\n"
+            "    text-align: right;",
             styles,
         )
         self.assertIn(
@@ -75,8 +86,14 @@ class ArabicInterfaceTests(unittest.TestCase):
             styles,
         )
         self.assertNotIn(
-            ".st-key-start_card {\n    direction: rtl;",
-            styles,
+            ".st-key-arabic_start_card {\n    direction: rtl;",
+            styles
+        )
+        self.assertTrue(
+            any(
+                '<div style="direction: rtl; text-align: right;">' in item.value
+                for item in app.markdown
+            )
         )
 
     def test_english_start_screen_remains_english(self):
@@ -86,7 +103,11 @@ class ArabicInterfaceTests(unittest.TestCase):
 
         self.assertFalse(app.exception)
         self.assertTrue(any("Ready to practice" in item.value for item in app.title))
-        self.assertEqual(app.selectbox[0].label, "Interview language")
+        self.assertEqual(app.segmented_control[0].label, "Interview language")
+        self.assertEqual(
+            app.segmented_control[0].options, ["English", "العربية"]
+        )
+        self.assertEqual(app.segmented_control[0].value, "English")
         self.assertEqual(app.file_uploader[0].label, "Upload your CV (PDF)")
         self.assertEqual(app.text_input[0].label, "Job title you're applying for")
         self.assertTrue(any(item.label == "Start interview" for item in app.button))
@@ -115,7 +136,7 @@ class ArabicInterfaceTests(unittest.TestCase):
 
         sample_dir = Path(__file__).resolve().parents[1] / "sample_cvs"
         sample_pdf = next(sample_dir.glob("*.pdf"))
-        app.selectbox[0].set_value("العربية")
+        app.segmented_control[0].set_value("العربية")
         app.file_uploader[0].set_value(
             (sample_pdf.name, sample_pdf.read_bytes(), "application/pdf")
         )

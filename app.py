@@ -237,10 +237,11 @@ def render_start_screen() -> None:
                 "a realistic interview, then show you how you did."
             )
 
-        language_choice = st.selectbox(
+        language_choice = st.segmented_control(
             "لغة المقابلة" if language == "ar" else "Interview language",
             ("English", "العربية"),
             key="language_choice",
+            default="English",
             on_change=clear_start_error,
         )
         language = "ar" if language_choice == "العربية" else "en"
