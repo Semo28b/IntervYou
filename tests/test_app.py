@@ -63,12 +63,60 @@ class ArabicInterfaceTests(unittest.TestCase):
         self.assertEqual(app.text_input[0].label, "المسمى الوظيفي")
         self.assertEqual(app.text_input[0].placeholder, "مهندس برمجيات")
         self.assertTrue(any("Google Gemini" in item.value for item in app.caption))
+        self.assertTrue(
+            any(
+                "إلى \u2068Google Gemini\u2069. لا يحفظها التطبيق."
+                in item.value
+                for item in app.caption
+            )
+        )
         self.assertTrue(any(item.label == "ابدأ المقابلة" for item in app.button))
 
         styles = app.markdown[0].value
         self.assertIn(
-            ".st-key-arabic_start_card [data-testid=\"stSegmentedControl\"] {\n"
-            "    direction: rtl;",
+            ".st-key-arabic_start_card .st-key-language_choice,\n"
+            ".st-key-arabic_start_card .st-key-language_choice > div {\n"
+            "    width: 100%;",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-arabic_start_card .stButtonGroup {\n"
+            "    display: flex;\n"
+            "    justify-content: flex-end;",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-arabic_start_card [role=\"radiogroup\"] {\n"
+            "    display: flex;\n"
+            "    width: 100% !important;\n"
+            "    direction: rtl;\n"
+            "    justify-content: flex-end;",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-start_card [role=\"radiogroup\"] button[aria-checked=\"true\"] {\n"
+            "    background-color: #BFE4CF !important;\n"
+            "    color: #2D4036 !important;",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-arabic_start_card .stElementContainer:has(\n"
+            "    > [data-testid=\"stButton\"]\n"
+            ") {\n"
+            "    width: 100%;",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-arabic_start_card [data-testid=\"stButton\"] {\n"
+            "    width: 100%;\n"
+            "    display: flex;\n"
+            "    justify-content: flex-end;",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-arabic_start_card [data-testid=\"stButton\"] button {\n"
+            "    width: auto;\n"
+            "    margin-left: auto;",
             styles,
         )
         self.assertIn(

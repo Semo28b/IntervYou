@@ -121,16 +121,47 @@ def inject_theme_styles() -> None:
             width: 100%;
             text-align: right;
         }
-        .st-key-arabic_start_card [data-testid="stSegmentedControl"] {
+        .st-key-arabic_start_card .st-key-language_choice,
+        .st-key-arabic_start_card .st-key-language_choice > div {
+            width: 100%;
+        }
+        .st-key-arabic_start_card .stButtonGroup {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .st-key-arabic_start_card [role="radiogroup"] {
+            display: flex;
+            width: 100% !important;
             direction: rtl;
+            justify-content: flex-end;
+        }
+        .st-key-arabic_start_card [role="radiogroup"] button[aria-checked="true"],
+        .st-key-start_card [role="radiogroup"] button[aria-checked="true"] {
+            background-color: #BFE4CF !important;
+            color: #2D4036 !important;
+        }
+        .st-key-arabic_start_card [role="radiogroup"] button[aria-checked="true"] *,
+        .st-key-start_card [role="radiogroup"] button[aria-checked="true"] * {
+            color: #2D4036 !important;
+        }
+        .st-key-arabic_start_card .stElementContainer:has(
+            > [data-testid="stButton"]
+        ) {
+            width: 100%;
+        }
+        .st-key-arabic_start_card [data-testid="stButton"] {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .st-key-arabic_start_card [data-testid="stButton"] button {
+            width: auto;
+            margin-left: auto;
         }
         .st-key-arabic_start_card input {
             direction: rtl;
             text-align: right;
             unicode-bidi: plaintext;
-        }
-        .st-key-arabic_start_card [data-testid="stButton"] {
-            direction: rtl;
         }
         .brand-pill {
             display: inline-block;
@@ -287,13 +318,16 @@ def render_start_screen() -> None:
         if st.session_state.start_error_field == "setup":
             st.error(_display_text(st.session_state.start_error_message, language))
 
-        st.caption(
-            isolate_latin_runs(
-                "ستُرسل سيرتك الذاتية وإجاباتك إلى Google Gemini. لا يحفظها التطبيق."
+        if language == "ar":
+            privacy_note = (
+                "ستُرسل سيرتك الذاتية وإجاباتك إلى "
+                f"{isolate_latin_runs('Google Gemini')}. لا يحفظها التطبيق."
             )
-            if language == "ar"
-            else "Your CV and answers are sent to Google Gemini. Not saved by this app."
-        )
+        else:
+            privacy_note = (
+                "Your CV and answers are sent to Google Gemini. Not saved by this app."
+            )
+        st.caption(privacy_note)
         start_clicked = st.button(
             isolate_latin_runs("ابدأ المقابلة")
             if language == "ar"
