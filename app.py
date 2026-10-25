@@ -125,10 +125,6 @@ def inject_theme_styles() -> None:
         .st-key-arabic_start_card .st-key-language_choice > div {
             width: 100%;
         }
-        .st-key-arabic_start_card .stButtonGroup {
-            display: flex;
-            justify-content: flex-end;
-        }
         .st-key-arabic_start_card [role="radiogroup"] {
             display: flex;
             width: 100% !important;
@@ -513,20 +509,25 @@ def scroll_to_latest_message_if_pending() -> None:
 def render_interview_screen() -> None:
     language = st.session_state.get("interview_language", "en")
     container_key = "arabic_interview" if language == "ar" else "interview_screen"
-    answer = None
     if language == "ar":
         placeholder = (
             "انتهت المقابلة"
             if st.session_state.interview_finished
             else "اكتب إجابتك"
         )
-        answer = st.chat_input(
-            placeholder=placeholder,
-            disabled=(
-                st.session_state.interview_finished
-                or st.session_state.pending_answer is not None
-            ),
+    else:
+        placeholder = (
+            "The interview has ended"
+            if st.session_state.interview_finished
+            else "Type your answer"
         )
+    answer = st.chat_input(
+        placeholder=placeholder,
+        disabled=(
+            st.session_state.interview_finished
+            or st.session_state.pending_answer is not None
+        ),
+    )
 
     with st.container(key=container_key):
         st.title("مقابلة عمل تجريبية" if language == "ar" else "AI Mock Interview")
@@ -601,21 +602,6 @@ def render_interview_screen() -> None:
             st.session_state.report_error = None
             st.session_state.scroll_to_top_pending = True
             st.rerun()
-
-        if language != "ar":
-            placeholder = (
-                "The interview has ended"
-                if st.session_state.interview_finished
-                else "Type your answer"
-            )
-
-            answer = st.chat_input(
-                placeholder=placeholder,
-                disabled=(
-                    st.session_state.interview_finished
-                    or st.session_state.pending_answer is not None
-                ),
-            )
 
     if answer is None:
         scroll_to_latest_message_if_pending()

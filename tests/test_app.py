@@ -261,6 +261,7 @@ class ArabicInterfaceTests(unittest.TestCase):
         app.session_state["phase"] = "interview"
         app.session_state["interview_language"] = "en"
         app.session_state["question_number"] = 4
+        app.session_state["chat_scroll_pending"] = True
         app.session_state["interview_messages"] = [
             {"role": "assistant", "text": "Scenario question"}
         ]
@@ -269,6 +270,32 @@ class ArabicInterfaceTests(unittest.TestCase):
 
         self.assertFalse(app.exception)
         self.assertTrue(any("Question 4 of 6" in item.value for item in app.caption))
+        self.assertEqual(app.chat_input[0].placeholder, "Type your answer")
+        self.assertEqual(len(app.html), 1)
+        self.assertIn("scrollIntoView", app.html[0].value)
+
+    def test_english_chat_input_queues_reply(self):
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
+        app.session_state["phase"] = "interview"
+        app.session_state["interview_language"] = "en"
+        app.session_state["interview_messages"] = [
+            {"role": "assistant", "text": "Tell me about your recent work."}
+        ]
+        app.session_state["cv_text"] = "Candidate CV"
+        app.session_state["job_title"] = "Software Engineer"
+        answer = "I led a team of five to deliver the project on time."
+
+        app.run(timeout=20)
+        with patch(
+            "gemini_service.generate_interview_turn",
+            side_effect=GeminiServiceError("Gemini is temporarily unavailable."),
+        ):
+            app.chat_input[0].set_value(answer).run(timeout=20)
+
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["pending_answer"], answer)
+        self.assertEqual(app.session_state["interview_messages"][-1]["role"], "user")
+        self.assertEqual(app.session_state["interview_messages"][-1]["text"], answer)
 
     def test_report_shown_after_interview_renders_one_shot_scroll_to_top(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"))
