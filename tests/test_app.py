@@ -80,19 +80,43 @@ class ArabicInterfaceTests(unittest.TestCase):
             styles,
         )
         self.assertIn(
+            ".st-key-start_card .stButtonGroup,\n"
             ".st-key-arabic_start_card .stButtonGroup {\n"
             "    display: block;",
             styles,
         )
         self.assertIn(
+            ".st-key-start_card [role=\"radiogroup\"],\n"
             ".st-key-arabic_start_card [role=\"radiogroup\"] {\n"
             "    display: flex;\n"
-            "    width: max-content !important;\n"
+            "    width: 16rem !important;\n"
             "    max-width: 100%;\n"
+            "    box-sizing: border-box;\n"
+            "    margin-left: 0 !important;\n"
+            "    margin-right: auto !important;\n"
+            "    padding: 2px;\n"
+            "    border: 1px solid #C7CDC8;\n"
+            "    border-radius: 999px;\n"
+            "    direction: ltr;\n"
+            "}",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-start_card [role=\"radiogroup\"] > button,\n"
+            ".st-key-arabic_start_card [role=\"radiogroup\"] > button {\n"
+            "    flex: 1 1 0;\n"
+            "    min-width: 0;\n"
+            "    margin: 0 !important;\n"
+            "    border: 0 !important;\n"
+            "    border-radius: 999px !important;\n"
+            "    background-color: transparent !important;\n"
+            "}",
+            styles,
+        )
+        self.assertIn(
+            ".st-key-arabic_start_card [role=\"radiogroup\"] {\n"
             "    margin-left: auto !important;\n"
             "    margin-right: 0 !important;\n"
-            "    align-self: flex-end;\n"
-            "    direction: rtl;\n"
             "}",
             styles,
         )

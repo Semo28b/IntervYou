@@ -125,17 +125,35 @@ def inject_theme_styles() -> None:
         .st-key-arabic_start_card .st-key-language_choice > div {
             width: 100%;
         }
+        .st-key-start_card .stButtonGroup,
         .st-key-arabic_start_card .stButtonGroup {
             display: block;
         }
+        .st-key-start_card [role="radiogroup"],
         .st-key-arabic_start_card [role="radiogroup"] {
             display: flex;
-            width: max-content !important;
+            width: 16rem !important;
             max-width: 100%;
+            box-sizing: border-box;
+            margin-left: 0 !important;
+            margin-right: auto !important;
+            padding: 2px;
+            border: 1px solid #C7CDC8;
+            border-radius: 999px;
+            direction: ltr;
+        }
+        .st-key-start_card [role="radiogroup"] > button,
+        .st-key-arabic_start_card [role="radiogroup"] > button {
+            flex: 1 1 0;
+            min-width: 0;
+            margin: 0 !important;
+            border: 0 !important;
+            border-radius: 999px !important;
+            background-color: transparent !important;
+        }
+        .st-key-arabic_start_card [role="radiogroup"] {
             margin-left: auto !important;
             margin-right: 0 !important;
-            align-self: flex-end;
-            direction: rtl;
         }
         .st-key-arabic_start_card [role="radiogroup"] button[aria-checked="true"],
         .st-key-start_card [role="radiogroup"] button[aria-checked="true"] {
